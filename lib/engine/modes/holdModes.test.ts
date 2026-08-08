@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_SETTINGS, createGame, fire, tick } from '../game'
+import { basis } from '../camera'
 import { EYE } from '../movement'
 import type { GameState, Input, ModeDef } from '../types'
 import { reaction } from './reaction'
@@ -11,17 +12,27 @@ const idle: Input = { keys: {}, mouseDown: false }
 
 const start = (mode: ModeDef): GameState => createGame(mode, DEFAULT_SETTINGS, 60, () => 0.5)
 
-/** Simuliert `seconds` mit festem Zeitschritt und friert das Ziel im Fadenkreuz ein. */
-function trackFor(g: GameState, input: Input, seconds: number, frozen: boolean) {
+/** Richtet die Kamera auf das aktuelle Ziel aus. */
+function aimAtTarget(g: GameState) {
+  const t = g.targets[0]
+  const dx = t.x - g.player.x
+  const dy = t.y - g.player.y
+  const dz = t.z - g.player.z
+  g.camera.yaw = Math.atan2(dx, dz)
+  g.camera.pitch = Math.atan2(dy, Math.hypot(dx, dz))
+  basis(g.camera)
+}
+
+/**
+ * Simuliert `seconds` mit festem Zeitschritt. Bei `aim` wird die Kamera vor
+ * jedem Schritt auf das Ziel gerichtet — waehrend des Schritts wandert es nur
+ * um Bruchteile seines Radius weiter, der Strahl trifft also weiterhin.
+ */
+function trackFor(g: GameState, input: Input, seconds: number, aim: boolean) {
   const step = 0.01
   for (let t = 0; t < seconds; t += step) {
+    if (aim) aimAtTarget(g)
     tick(g, input, step)
-    if (frozen) {
-      g.targets[0].x = 0
-      g.targets[0].y = EYE
-      g.targets[0].z = 10
-      g.targets[0].r = 0.5
-    }
   }
 }
 
@@ -48,11 +59,9 @@ describe('tracking', () => {
 
   it('zaehlt keine Zeit auf dem Ziel wenn das Fadenkreuz danebenliegt', () => {
     const g = start(tracking)
-    const step = 0.01
-    for (let t = 0; t < 1; t += step) {
-      tick(g, holding, step)
-      g.targets[0].x = 50
-    }
+    // Blick nach hinten: das Ziel liegt hinter der Kamera und ist nie im Strahl.
+    g.camera.yaw = Math.PI
+    trackFor(g, holding, 1, false)
     expect(g.trackTotal).toBeGreaterThan(0.9)
     expect(g.trackTime).toBe(0)
   })
