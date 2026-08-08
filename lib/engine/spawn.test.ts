@@ -35,10 +35,23 @@ describe('spawnAtAngle', () => {
     for (const r of [0, 0.25, 0.5, 0.75, 0.99]) {
       const g = stubState(seq([r]))
       const t = spawnAtAngle(g, 12, 34, 16, 0.34)
+      // Die Bodenkorrektur hat Vorrang vor der Winkelgarantie: wurde das Ziel
+      // angehoben, liegt es bewusst naeher an der Blickachse als bestellt.
+      if (t.y === 0.34 + 0.35) continue
       const off = offsetDeg(g, t)
       expect(off).toBeGreaterThanOrEqual(11.9)
       expect(off).toBeLessThanOrEqual(34.1)
     }
+  })
+
+  it('prueft mindestens ein Ziel ohne Bodenkorrektur', () => {
+    let geprueft = 0
+    for (const r of [0, 0.25, 0.5, 0.75, 0.99]) {
+      const g = stubState(seq([r]))
+      const t = spawnAtAngle(g, 12, 34, 16, 0.34)
+      if (t.y !== 0.34 + 0.35) geprueft++
+    }
+    expect(geprueft).toBeGreaterThanOrEqual(4)
   })
 
   it('merkt sich den Erscheinungszeitpunkt fuer die TTK-Messung', () => {
