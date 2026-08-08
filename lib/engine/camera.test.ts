@@ -35,6 +35,21 @@ describe('basis', () => {
     basis(cam)
     expect(cam.R.y).toBe(0)
   })
+
+  it('zeigt R bei Blick nach vorn nach rechts', () => {
+    const cam = createCamera()
+    expect(cam.R.x).toBeCloseTo(1, 10)
+    expect(cam.R.y).toBe(0)
+    expect(cam.R.z).toBeCloseTo(0, 10)
+  })
+
+  it('dreht R mit dem Blick mit', () => {
+    const cam = createCamera()
+    cam.yaw = Math.PI / 2
+    basis(cam)
+    expect(cam.R.x).toBeCloseTo(0, 10)
+    expect(cam.R.z).toBeCloseTo(-1, 10)
+  })
 })
 
 describe('applyMouse', () => {
