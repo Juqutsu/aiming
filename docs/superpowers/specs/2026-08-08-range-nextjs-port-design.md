@@ -13,7 +13,7 @@ inhaltliche Substanz darin ist wertvoller, als die Dateigröße vermuten lässt:
 - analytisches Ray-Sphere-Picking für Treffer
 - Valorant-nahe Bewegungsphysik mit hartem Counterstrafe-Bremsen
 - die Sensitivity-Formel des Spiels (0,07° pro Maus-Count) inklusive cm/360 und eDPI
-- zehn Trainingsmodi, drei Routinen, modus-spezifische Coach-Texte
+- elf Trainingsmodi, drei Routinen, modus-spezifische Coach-Texte
 - zwei nachempfundene Sprühmuster
 
 Ziel ist eine lokale Trainings-Plattform: dasselbe Spiel in echtem 3D, dazu Run-Historie mit
@@ -54,7 +54,7 @@ lib/engine/
   movement.ts    RUN/ACC/FRIC/COUNTER — die Counterstrafe-Physik
   weapons.ts     Vandal und Phantom: Magazin, Feuerrate, Sprühmuster
   sens.ts        0,07°/Count, cm/360, eDPI
-  modes/         zehn Module, je start/tick/fire/stats/metric
+  modes/         elf Module, je start/tick/fire/stats/metric
   game.ts        GameState und tick(dt, input)
 ```
 
@@ -167,8 +167,8 @@ Keine Component-Tests, keine E2E-Suite. Der visuelle Teil wird von Hand geprüft
 | # | Inhalt | Fertig, wenn |
 |---|---|---|
 | 0 | Gerüst: pnpm, Next 16, Tailwind 4, shadcn, vitest, `git init`, `index.html` nach `reference/` | `pnpm dev` zeigt die leere App |
-| 1 | Engine-Port, frameworkfrei, mit Tests | `pnpm test` grün, alle zehn Modi headless simulierbar |
-| 2 | R3F-Szene, Pointer-Lock-Input, HUD | alle zehn Modi spielbar, fühlt sich an wie das Original |
+| 1 | Engine-Port, frameworkfrei, mit Tests | `pnpm test` grün, alle elf Modi headless simulierbar |
+| 2 | R3F-Szene, Pointer-Lock-Input, HUD | alle elf Modi spielbar, fühlt sich an wie das Original |
 | 3 | Persistenz, Menü und Settings in shadcn | Bestwerte und Einstellungen überleben den Reload |
 | 4 | Run-Historie und Charts | Fortschrittskurve pro Modus |
 | 5 | Routinen-Builder, Crosshair-Presets, Valorant-Import | eigene Routine spielbar, Import funktioniert |
