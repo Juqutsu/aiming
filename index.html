@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RANGE — Aim &amp; Movement Trainer</title>
+<style>
+:root{
+  --void:#0b1116;
+  --steel:#141d26;
+  --steel-2:#1c2733;
+  --line:#2b3a49;
+  --bone:#e8e4dc;
+  --dim:#7d8fa1;
+  --sig:#ff4655;
+  --ok:#25e0b8;
+  --warn:#ffb43a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--void);color:var(--bone);
+  font-family:'Roboto Condensed','Archivo Narrow','Arial Narrow','Liberation Sans Narrow',system-ui,sans-serif;
+  overflow:hidden}
+body{-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:none;background:var(--void)}
+
+/* angled-corner device — the one flourish, used everywhere structural */
+.cut{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+
+.screen{position:fixed;inset:0;overflow-y:auto;background:
+  radial-gradient(120% 80% at 50% -10%,#16222e 0%,var(--void) 60%);
+  padding:28px 24px 60px;z-index:20}
+.screen.hidden,.hidden{display:none!important}
+.wrap{max-width:1080px;margin:0 auto}
+
+header.brand{display:flex;align-items:flex-end;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:26px;gap:16px;flex-wrap:wrap}
+.logo{font-size:38px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;line-height:.95}
+.logo em{font-style:normal;color:var(--sig)}
+.tag{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:6px}
+.sensbadge{font-size:12px;letter-spacing:.1em;color:var(--dim);text-align:right;line-height:1.7}
+.sensbadge b{color:var(--bone)}
+
+.eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--sig);
+  display:flex;align-items:center;gap:10px;margin:30px 0 12px}
+.eyebrow:after{content:"";flex:1;height:1px;background:var(--line)}
+.eyebrow span.note{color:var(--dim);letter-spacing:.12em}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:12px}
+.card{background:var(--steel);border:1px solid var(--line);padding:16px 16px 14px;
+  text-align:left;color:inherit;font:inherit;cursor:pointer;position:relative;
+  transition:background .12s,border-color .12s,transform .12s}
+.card:hover,.card:focus-visible{background:var(--steel-2);border-color:var(--sig);transform:translateY(-2px)}
+.card:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.card h3{font-size:19px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+.card p{font-size:13.5px;color:var(--dim);line-height:1.45;margin-top:6px;min-height:58px}
+.card .best{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  border-top:1px solid var(--line);margin-top:10px;padding-top:8px;display:flex;justify-content:space-between}
+.card .best b{color:var(--ok);font-weight:600}
+.card .skill{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.16em;
+  color:var(--void);background:var(--dim);padding:2px 6px;text-transform:uppercase}
+.card .skill.core{background:var(--sig);color:#fff}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+button.btn{background:var(--sig);color:#fff;border:0;padding:12px 22px;font:inherit;font-size:14px;
+  letter-spacing:.16em;text-transform:uppercase;font-weight:700;cursor:pointer}
+button.btn:hover{filter:brightness(1.12)}
+button.btn.ghost{background:transparent;color:var(--bone);border:1px solid var(--line)}
+button.btn.ghost:hover{border-color:var(--bone);background:#0000}
+button.btn:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+
+/* settings */
+.panel{background:var(--steel);border:1px solid var(--line);padding:20px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px 20px}
+label.f{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.f-val{color:var(--ok)}
+input[type=range]{width:100%;accent-color:var(--sig);background:transparent}
+input[type=number],select{width:100%;background:var(--void);border:1px solid var(--line);color:var(--bone);
+  padding:8px 10px;font:inherit;font-size:14px}
+input[type=color]{width:100%;height:36px;background:var(--void);border:1px solid var(--line);padding:2px}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--bone);cursor:pointer}
+.chk input{accent-color:var(--sig);width:16px;height:16px}
+.xhpreview{height:96px;background:#0e1a12;border:1px solid var(--line);position:relative;overflow:hidden}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;font-size:13px}
+.hudTop{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;gap:2px;padding-top:10px}
+.pill{background:rgba(11,17,22,.82);border:1px solid var(--line);padding:6px 16px;text-align:center;min-width:92px}
+.pill .k{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.pill .v{font-size:22px;font-weight:700;line-height:1.05}
+.pill .v.sig{color:var(--sig)}
+.pill .v.ok{color:var(--ok)}
+.hudLeft{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:190px}
+.meter{margin-bottom:14px}
+.meter .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  display:flex;justify-content:space-between;margin-bottom:4px}
+.bar{height:10px;background:#0e161d;border:1px solid var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--sig);width:0%}
+.bar .zone{position:absolute;top:0;bottom:0;background:rgba(37,224,184,.22);border-right:1px solid var(--ok)}
+.hudBottom{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:var(--dim);
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.cue{position:absolute;top:26%;left:0;right:0;text-align:center;font-size:44px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;text-shadow:0 2px 20px #000}
+.ammo{position:absolute;right:26px;bottom:24px;text-align:right}
+.ammo .n{font-size:40px;font-weight:700;line-height:1}
+.ammo .w{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+
+#pause{position:fixed;inset:0;z-index:30;background:rgba(11,17,22,.9);display:flex;
+  align-items:center;justify-content:center;text-align:center}
+#pause .box{max-width:420px}
+#pause h2{font-size:30px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+#pause p{color:var(--dim);font-size:14px;line-height:1.6;margin-bottom:18px}
+
+/* results */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line)}
+.stat{background:var(--steel);padding:16px 14px}
+.stat .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.stat .v{font-size:30px;font-weight:700;line-height:1.15;margin-top:2px}
+.stat .v small{font-size:14px;color:var(--dim);font-weight:400}
+.coach{border-left:3px solid var(--sig);background:var(--steel);padding:14px 16px;margin-top:16px;
+  font-size:14.5px;line-height:1.6}
+.coach b{color:var(--sig);letter-spacing:.1em;text-transform:uppercase;font-size:11px;display:block;margin-bottom:4px}
+table.hist{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+table.hist th{text-align:left;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  border-bottom:1px solid var(--line);padding:6px 8px}
+table.hist td{padding:6px 8px;border-bottom:1px solid #1a232c}
+table.hist td.n{text-align:right;font-variant-numeric:tabular-nums}
+.newbest{color:var(--ok);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);
+  font-size:12.5px;line-height:1.7}
+@media (max-width:640px){.logo{font-size:28px}.hudLeft{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hudTop">
+    <div class="pill cut"><div class="k">Zeit</div><div class="v" id="hTime">60</div></div>
+    <div class="pill cut"><div class="k">Score</div><div class="v sig" id="hScore">0</div></div>
+    <div class="pill cut"><div class="k">Acc</div><div class="v" id="hAcc">–</div></div>
+    <div class="pill cut"><div class="k" id="hExtraK">Streak</div><div class="v ok" id="hExtra">0</div></div>
+  </div>
+  <div class="hudLeft hidden" id="hMeters">
+    <div class="meter">
+      <div class="k"><span>Tempo</span><span id="mSpeedV">0.0 m/s</span></div>
+      <div class="bar"><div class="zone" id="mZone"></div><i id="mSpeed"></i></div>
+    </div>
+    <div class="meter" id="mExposeWrap">
+      <div class="k"><span>Exposure</span><span id="mExposeV">0 ms</span></div>
+      <div class="bar"><div class="zone" id="mEZone"></div><i id="mExpose"></i></div>
+    </div>
+  </div>
+  <div class="cue hidden" id="hCue"></div>
+  <div class="ammo hidden" id="hAmmo"><div class="n" id="hAmmoN">25</div><div class="w" id="hAmmoW">Vandal</div></div>
+  <div class="hudBottom" id="hHint"></div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause" class="hidden">
+  <div class="box">
+    <h2 id="pTitle">Bereit</h2>
+    <p id="pText">Klick, um die Maus zu binden. Esc pausiert.</p>
+    <div class="row" style="justify-content:center">
+      <button class="btn cut" id="pResume">Maus binden</button>
+      <button class="btn ghost cut" id="pQuit">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MENU ============ -->
+<div id="menu" class="screen">
+  <div class="wrap">
+    <header class="brand">
+      <div>
+        <div class="logo">Range<em>.</em></div>
+        <div class="tag">Aim · Recoil · Movement</div>
+      </div>
+      <div class="sensbadge">
+        Sens <b id="bSens">0.22</b> · <b id="bDpi">800</b> DPI · eDPI <b id="bEdpi">176</b><br>
+        <b id="bCm">–</b> cm/360 · FOV 103 (Hor+)
+      </div>
+    </header>
+
+    <div class="eyebrow">Routine <span class="note">— empfohlener Einstieg</span></div>
+    <div class="grid" id="gridRoutine"></div>
+
+    <div class="eyebrow">Aim</div>
+    <div class="grid" id="gridAim"></div>
+
+    <div class="eyebrow">Recoil</div>
+    <div class="grid" id="gridSpray"></div>
+
+    <div class="eyebrow">Movement</div>
+    <div class="grid" id="gridMove"></div>
+
+    <div class="eyebrow">Einstellungen</div>
+    <div class="panel cut">
+      <div class="fields">
+        <div>
+          <label class="f" for="sSens">Sensitivity <span class="f-val" id="vSens">0.220</span></label>
+          <input type="range" id="sSens" min="0.05" max="1.2" step="0.005">
+        </div>
+        <div>
+          <label class="f" for="sDpi">Maus-DPI</label>
+          <input type="number" id="sDpi" min="100" max="6400" step="50">
+        </div>
+        <div>
+          <label class="f" for="sDur">Rundenlänge <span class="f-val" id="vDur">60 s</span></label>
+          <input type="range" id="sDur" min="15" max="180" step="5">
+        </div>
+        <div>
+          <label class="f" for="sSize">Zielgröße <span class="f-val" id="vSize">100 %</span></label>
+          <input type="range" id="sSize" min="50" max="180" step="5">
+        </div>
+        <div>
+          <label class="f" for="sWeap">Waffe</label>
+          <select id="sWeap"><option value="vandal">Vandal</option><option value="phantom">Phantom</option></select>
+        </div>
+        <div>
+          <label class="f" for="sXcol">Crosshair-Farbe</label>
+          <input type="color" id="sXcol">
+        </div>
+        <div>
+          <label class="f" for="sGap">Gap <span class="f-val" id="vGap">3</span></label>
+          <input type="range" id="sGap" min="0" max="14" step="1">
+        </div>
+        <div>
+          <label class="f" for="sLen">Länge <span class="f-val" id="vLen">6</span></label>
+          <input type="range" id="sLen" min="0" max="20" step="1">
+        </div>
+        <div>
+          <label class="f" for="sThick">Dicke <span class="f-val" id="vThick">2</span></label>
+          <input type="range" id="sThick" min="1" max="6" step="1">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;justify-content:flex-end">
+          <label class="chk"><input type="checkbox" id="sDot"> Mittelpunkt</label>
+          <label class="chk"><input type="checkbox" id="sOutline"> Kontur</label>
+          <label class="chk"><input type="checkbox" id="sSound"> Sound</label>
+        </div>
+        <div>
+          <label class="f">Vorschau</label>
+          <div class="xhpreview cut"><canvas id="xhCv" width="400" height="200" style="width:100%;height:100%"></canvas></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn ghost cut" id="bReset">Bestwerte löschen</button>
+      </div>
+    </div>
+
+    <div class="foot">
+      <b>Sensitivity-Hinweis:</b> Der Browser liefert keine echten Raw-Input-Daten. Die Umrechnung nutzt die
+      Valorant-Formel (0,07° pro Maus-Count). Damit das 1:1 deinem Spiel entspricht: Maus­beschleunigung im
+      Betriebssystem aus, Windows-Zeigergeschwindigkeit auf 6/11, Display-Skalierung auf 100 %, Browser-Zoom auf 100 %.
+      Sprühmuster sind den echten nachempfunden, nicht datengenau ausgelesen.
+    </div>
+  </div>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div id="results" class="screen hidden">
+  <div class="wrap">
+    <header class="brand">
+      <div>
+        <div class="logo" id="rMode">Gridshot</div>
+        <div class="tag" id="rSub">60 Sekunden</div>
+      </div>
+      <div class="sensbadge"><span id="rBest"></span></div>
+    </header>
+    <div class="stats" id="rStats"></div>
+    <div class="coach"><b>Coach</b><span id="rCoach"></span></div>
+    <div class="row" style="margin-top:20px">
+      <button class="btn cut" id="rAgain">Nochmal</button>
+      <button class="btn cut hidden" id="rNext">Weiter in der Routine</button>
+      <button class="btn ghost cut" id="rMenu">Zurück</button>
+    </div>
+    <div id="rHistWrap" class="hidden">
+      <div class="eyebrow">Session</div>
+      <table class="hist"><thead><tr><th>#</th><th>Modus</th><th class="n">Score</th><th class="n">Acc</th><th class="n">Detail</th></tr></thead><tbody id="rHist"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   0 · Speicher (Artifact-Storage → localStorage → RAM)
+   ========================================================================= */
+const _mem = {};
+const store = {
+  async get(k){
+    if (window.storage) { try { const r = await window.storage.get(k); if (r && r.value) return JSON.parse(r.value); } catch(e){} }
+    try { const v = localStorage.getItem(k); if (v) return JSON.parse(v); } catch(e){}
+    return _mem[k] ?? null;
+  },
+  async set(k,v){
+    _mem[k]=v;
+    if (window.storage) { try { await window.storage.set(k, JSON.stringify(v)); return; } catch(e){} }
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){}
+  }
+};
+
+/* =========================================================================
+   1 · Einstellungen
+   ========================================================================= */
+const S = {
+  sens:0.22, dpi:800, dur:60, sizeMul:1.0, weapon:'vandal',
+  xcol:'#25e0b8', gap:3, len:6, thick:2, dot:false, outline:true, sound:true
+};
+let BEST = {};
+
+/* =========================================================================
+   2 · Mathe / Kamera
+   ========================================================================= */
+const DEG = Math.PI/180;
+const HFOV_16_9 = 103;                                   // Valorant, horizontal
+const VFOV = 2*Math.atan(Math.tan(HFOV_16_9/2*DEG)*(9/16)); // Hor+ ⇒ vertikal konstant
+const NEAR = 0.06;
+const EYE  = 1.65;
+
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+let W=0,H=0,focal=1,DPR=1;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  focal = (H/2)/Math.tan(VFOV/2);
+}
+addEventListener('resize', resize);
+
+// Kamera
+let yaw=0, pitch=0;
+const P = {x:0,y:EYE,z:0, vx:0, vz:0};
+let F={x:0,y:0,z:1}, R={x:1,y:0,z:0}, U={x:0,y:1,z:0};
+
+function basis(){
+  const cp=Math.cos(pitch), sp=Math.sin(pitch), sy=Math.sin(yaw), cy=Math.cos(yaw);
+  F={x:cp*sy, y:sp, z:cp*cy};
+  R={x:cy, y:0, z:-sy};
+  U={x:F.y*R.z-F.z*R.y, y:F.z*R.x-F.x*R.z, z:F.x*R.y-F.y*R.x};
+}
+function dirFrom(y,p){const cp=Math.cos(p);return{x:cp*Math.sin(y),y:Math.sin(p),z:cp*Math.cos(y)};}
+function toCam(px,py,pz){
+  const dx=px-P.x, dy=py-P.y, dz=pz-P.z;
+  return {x:dx*R.x+dy*R.y+dz*R.z, y:dx*U.x+dy*U.y+dz*U.z, z:dx*F.x+dy*F.y+dz*F.z};
+}
+function proj(c){ return {x:W/2 + c.x*focal/c.z, y:H/2 - c.y*focal/c.z}; }
+
+// Strahl→Kugel entlang Blickrichtung
+function raySphere(t){
+  const ox=t.x-P.x, oy=t.y-P.y, oz=t.z-P.z;
+  const tca = ox*F.x+oy*F.y+oz*F.z;
+  if (tca <= 0) return -1;
+  const d2 = (ox*ox+oy*oy+oz*oz) - tca*tca;
+  const r2 = t.r*t.r;
+  if (d2 > r2) return -1;
+  return tca - Math.sqrt(r2-d2);
+}
+function rayHitBest(list){
+  let best=null, bt=Infinity;
+  for (const t of list){ if(t.dead) continue; const d=raySphere(t); if(d>0 && d<bt){bt=d;best=t;} }
+  return best;
+}
+// 2D-Segmentschnitt (Sichtlinie vs. Deckung)
+function segCross(ax,ay,bx,by,cx,cy,dx,dy){
+  const d1=(bx-ax)*(cy-ay)-(by-ay)*(cx-ax);
+  const d2=(bx-ax)*(dy-ay)-(by-ay)*(dx-ax);
+  const d3=(dx-cx)*(ay-cy)-(dy-cy)*(ax-cx);
+  const d4=(dx-cx)*(by-cy)-(dy-cy)*(bx-cx);
+  return ((d1>0)!==(d2>0)) && ((d3>0)!==(d4>0));
+}
+
+/* =========================================================================
+   3 · Zeichnen von Welt-Geometrie (mit Near-Plane-Clipping)
+   ========================================================================= */
+function clipPoly(pts){
+  const out=[];
+  for (let i=0;i<pts.length;i++){
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    const ain=a.z>=NEAR, bin=b.z>=NEAR;
+    if (ain) out.push(a);
+    if (ain!==bin){
+      const t=(NEAR-a.z)/(b.z-a.z);
+      out.push({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, z:NEAR});
+    }
+  }
+  return out;
+}
+function fillQuad(worldPts, fill, stroke){
+  const cam = worldPts.map(p=>toCam(p[0],p[1],p[2]));
+  const cl = clipPoly(cam);
+  if (cl.length<3) return;
+  ctx.beginPath();
+  cl.forEach((c,i)=>{const s=proj(c); i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y);});
+  ctx.closePath();
+  if (fill){ctx.fillStyle=fill;ctx.fill();}
+  if (stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+}
+function line3(ax,ay,az,bx,by,bz){
+  let a=toCam(ax,ay,az), b=toCam(bx,by,bz);
+  if (a.z<NEAR && b.z<NEAR) return;
+  if (a.z<NEAR){const t=(NEAR-a.z)/(b.z-a.z); a={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:NEAR};}
+  else if (b.z<NEAR){const t=(NEAR-b.z)/(a.z-b.z); b={x:b.x+(a.x-b.x)*t,y:b.y+(a.y-b.y)*t,z:NEAR};}
+  const s1=proj(a), s2=proj(b);
+  ctx.moveTo(s1.x,s1.y); ctx.lineTo(s2.x,s2.y);
+}
+
+function drawWorld(){
+  // Horizont: obere Hälfte Wandfarbe, untere Bodenfarbe
+  const hy = H/2 + focal*Math.tan(pitch);
+  ctx.fillStyle = '#151f29'; ctx.fillRect(0,0,W,Math.max(0,Math.min(H,hy)));
+  ctx.fillStyle = '#0d151c'; ctx.fillRect(0,Math.max(0,Math.min(H,hy)),W,H);
+
+  // Bodenraster
+  ctx.strokeStyle = 'rgba(96,124,150,.18)'; ctx.lineWidth = 1; ctx.beginPath();
+  const x0=Math.floor(P.x)-24, x1=Math.floor(P.x)+24;
+  const z0=Math.floor(P.z)-6,  z1=Math.floor(P.z)+42;
+  for (let x=x0;x<=x1;x+=2) line3(x,0,z0, x,0,z1);
+  for (let z=z0;z<=z1;z+=2) line3(x0,0,z, x1,0,z);
+  ctx.stroke();
+
+  // Rückwand
+  fillQuad([[-26,0,34],[26,0,34],[26,7,34],[-26,7,34]], '#1a2833', 'rgba(96,124,150,.25)');
+  ctx.strokeStyle='rgba(96,124,150,.12)'; ctx.beginPath();
+  for (let x=-26;x<=26;x+=2) line3(x,0,34,x,7,34);
+  for (let y=0;y<=7;y+=1)   line3(-26,y,34,26,y,34);
+  ctx.stroke();
+}
+
+function drawTargets(list){
+  const vis=[];
+  for (const t of list){
+    if (t.dead || t.hidden) continue;
+    const c = toCam(t.x,t.y,t.z);
+    if (c.z<=NEAR) continue;
+    const s = proj(c);
+    vis.push({t, s, z:c.z, r: t.r*focal/c.z});
+  }
+  vis.sort((a,b)=>b.z-a.z);
+  for (const v of vis){
+    const grd = ctx.createRadialGradient(v.s.x-v.r*.34, v.s.y-v.r*.34, v.r*.12, v.s.x, v.s.y, v.r);
+    const col = v.t.color || '#ff4655';
+    grd.addColorStop(0, '#ffffff'); grd.addColorStop(.28, col); grd.addColorStop(1, shade(col,-.45));
+    ctx.beginPath(); ctx.arc(v.s.x, v.s.y, v.r, 0, 6.2832);
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.lineWidth = Math.max(1, v.r*.09); ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
+    if (v.r > 9){
+      ctx.beginPath(); ctx.arc(v.s.x, v.s.y, v.r*.16, 0, 6.2832);
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fill();
+    }
+  }
+}
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  const f=v=>Math.max(0,Math.min(255,Math.round(v+(amt<0?v*amt:(255-v)*amt))));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+/* ---- Trefferfeedback ---- */
+const fx = [];
+function popFx(sx,sy,txt,col){ fx.push({x:sx,y:sy,t:0,txt,col:col||'#fff'}); }
+function drawFx(dt){
+  for (let i=fx.length-1;i>=0;i--){
+    const f=fx[i]; f.t+=dt;
+    const a=1-f.t/0.55; if(a<=0){fx.splice(i,1);continue;}
+    ctx.globalAlpha=a;
+    ctx.beginPath(); ctx.arc(f.x,f.y,10+f.t*120,0,6.2832);
+    ctx.strokeStyle=f.col; ctx.lineWidth=2; ctx.stroke();
+    if (f.txt){
+      ctx.font='700 17px ui-monospace,monospace'; ctx.textAlign='center';
+      ctx.fillStyle=f.col; ctx.fillText(f.txt, f.x, f.y-22-f.t*46);
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+/* ---- Crosshair ---- */
+function drawXhair(c, cx, cy, cfg){
+  const g=cfg.gap, l=cfg.len, t=cfg.thick;
+  const seg=[[0,-1],[0,1],[-1,0],[1,0]];
+  if (cfg.outline){
+    c.strokeStyle='rgba(0,0,0,.85)'; c.lineWidth=t+2; c.beginPath();
+    for(const[dx,dy]of seg){c.moveTo(cx+dx*g,cy+dy*g);c.lineTo(cx+dx*(g+l),cy+dy*(g+l));}
+    if(l>0)c.stroke();
+    if(cfg.dot){c.beginPath();c.arc(cx,cy,t/2+1,0,6.2832);c.fillStyle='rgba(0,0,0,.85)';c.fill();}
+  }
+  c.strokeStyle=cfg.xcol; c.lineWidth=t; c.lineCap='butt'; c.beginPath();
+  for(const[dx,dy]of seg){c.moveTo(cx+dx*g,cy+dy*g);c.lineTo(cx+dx*(g+l),cy+dy*(g+l));}
+  if(l>0)c.stroke();
+  if(cfg.dot){c.beginPath();c.arc(cx,cy,t/2,0,6.2832);c.fillStyle=cfg.xcol;c.fill();}
+}
+
+/* =========================================================================
+   4 · Sound
+   ========================================================================= */
+let AC=null;
+function actx(){ if(!AC) try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} return AC; }
+function blip(freq, dur, type, vol){
+  if(!S.sound) return; const a=actx(); if(!a) return;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type||'square'; o.frequency.value=freq;
+  g.gain.setValueAtTime(vol??0.09, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur);
+  o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur);
+}
+function shot(){
+  if(!S.sound) return; const a=actx(); if(!a) return;
+  const n=a.createBufferSource(), len=Math.floor(a.sampleRate*0.06);
+  const buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2);
+  n.buffer=buf; const g=a.createGain(); g.gain.value=0.06;
+  n.connect(g); g.connect(a.destination); n.start();
+}
+const sfx = {
+  hit:()=>blip(880,0.06,'square',0.10),
+  head:()=>{blip(1320,0.05,'square',0.11);setTimeout(()=>blip(1760,0.05,'square',0.08),35);},
+  miss:()=>blip(160,0.05,'sawtooth',0.05),
+  go:()=>blip(660,0.09,'triangle',0.10),
+  bad:()=>blip(110,0.22,'sawtooth',0.08),
+  tick:()=>blip(440,0.04,'sine',0.05)
+};
+
+/* =========================================================================
+   5 · Waffen / Rückstoß (nachempfunden)
+   ========================================================================= */
+const WEAPONS = {
+  vandal:{name:'Vandal', mag:25, rps:9.75, dmg:39,
+    pat:[[0,0],[0,.55],[.05,1.25],[.05,2.0],[0,2.8],[-.05,3.55],[-.1,4.25],[-.15,4.85],
+         [-.2,5.35],[-.2,5.8],[-.1,6.1],[.15,6.35],[.55,6.55],[1.05,6.72],[1.55,6.85],
+         [1.95,6.94],[2.1,7.0],[1.85,7.06],[1.3,7.1],[.5,7.14],[-.4,7.18],[-1.2,7.22],
+         [-1.8,7.26],[-2.05,7.3],[-1.75,7.34]]},
+  phantom:{name:'Phantom', mag:30, rps:11, dmg:35,
+    pat:[[0,0],[0,.45],[.04,1.05],[.04,1.7],[0,2.35],[-.04,3.0],[-.08,3.55],[-.12,4.05],
+         [-.16,4.5],[-.16,4.9],[-.08,5.2],[.12,5.45],[.45,5.65],[.88,5.8],[1.3,5.92],
+         [1.62,6.0],[1.75,6.06],[1.55,6.11],[1.1,6.15],[.42,6.19],[-.34,6.22],[-1.0,6.25],
+         [-1.5,6.28],[-1.72,6.31],[-1.5,6.34],[-1.0,6.37],[-.3,6.4],[.4,6.43],[1.0,6.46],[1.3,6.49]]}
+};
+
+/* =========================================================================
+   6 · Spielzustand
+   ========================================================================= */
+const keys = {};
+let mouseDown = false;
+let running = false, paused = false, locked = false;
+let G = null;                     // aktuelle Runde
+let queue = [];                   // Routine
+const session = [];               // Verlauf dieser Session
+
+function newGame(modeId, dur){
+  const M = MODES[modeId];
+  G = {
+    id:modeId, M, dur: dur||S.dur, t:0, left: dur||S.dur,
+    score:0, hits:0, shots:0, streak:0, bestStreak:0,
+    ttk:[], react:[], targets:[], holes:[], data:{},
+    trackTime:0, trackTotal:0, over:false
+  };
+  P.x=0; P.y=EYE; P.z=0; P.vx=0; P.vz=0; yaw=0; pitch=0;
+  basis(); M.start(G);
+  hud.meters.classList.toggle('hidden', !M.meters);
+  hud.ammo.classList.toggle('hidden', !M.ammoHud);
+  hud.hint.textContent = M.hint || '';
+  hud.extraK.textContent = M.extraLabel || 'Streak';
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  running = true; paused = true;
+  showPause('Bereit', M.hint || 'Klick, um die Maus zu binden. Esc pausiert.');
+}
+
+function endGame(){
+  if (G.over) return;
+  G.over = true; running=false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  document.getElementById('hud').classList.add('hidden');
+  showResults();
+}
+
+/* =========================================================================
+   7 · Zielhilfen
+   ========================================================================= */
+function spawnAtAngle(g, minDeg, maxDeg, dist, r){
+  const ang = (minDeg + Math.random()*(maxDeg-minDeg))*DEG;
+  const rot = Math.random()*Math.PI*2;
+  // Offset relativ zur aktuellen Blickrichtung
+  const dy = Math.cos(rot)*ang, dx = Math.sin(rot)*ang;
+  let ty = yaw + dx, tp = pitch + dy;
+  tp = Math.max(-22*DEG, Math.min(26*DEG, tp));
+  ty = Math.max(-58*DEG, Math.min(58*DEG, ty));
+  const d = dirFrom(ty,tp);
+  const t = {x:P.x+d.x*dist, y:P.y+d.y*dist, z:P.z+d.z*dist, r, dead:false, born:g.t};
+  if (t.y < r+0.35) t.y = r+0.35;
+  return t;
+}
+function slotTarget(g, r, xr, ylo, yhi, z){
+  return {x:(Math.random()*2-1)*xr, y:ylo+Math.random()*(yhi-ylo), z, r, dead:false, born:g.t};
+}
+function registerHit(g, t, sx, sy, label){
+  g.hits++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak);
+  const dt = (g.t - (t.born||g.t))*1000;
+  if (dt>0 && dt<4000) g.ttk.push(dt);
+  popFx(sx, sy, label || '+1', '#25e0b8');
+  sfx.hit();
+}
+function registerMiss(g, label){
+  g.streak = 0;
+  if (label) popFx(W/2, H/2, label, '#ff4655');
+  sfx.miss();
+}
+
+/* =========================================================================
+   8 · Modi
+   ========================================================================= */
+const MODES = {
+
+/* ---------- AIM ---------- */
+gridshot:{
+  name:'Gridshot', cat:'aim', skill:'Klick-Tempo', core:true,
+  desc:'Drei Ziele gleichzeitig, sofortiger Respawn. Trainiert Klickgeschwindigkeit und Zielwechsel unter Zeitdruck.',
+  hint:'Linksklick trifft · Esc pausiert',
+  start(g){ g.targets=[]; for(let i=0;i<3;i++) g.targets.push(this.mk(g)); },
+  mk(g){ const t = slotTarget(g, 0.42*S.sizeMul, 6.2, 0.9, 3.4, 17); return t; },
+  tick(){},
+  fire(g){
+    const t = rayHitBest(g.targets);
+    g.shots++;
+    if (t){ const c=toCam(t.x,t.y,t.z), s=proj(c); registerHit(g,t,s.x,s.y); g.score++;
+      const i=g.targets.indexOf(t); g.targets[i]=this.mk(g); }
+    else registerMiss(g);
+  },
+  stats(g){ return [['Ziele',g.score],['Accuracy',pc(g.hits,g.shots)],['Ø TTK',ms(avg(g.ttk))],['Beste Serie',g.bestStreak],['Ziele/min',(g.score/g.dur*60).toFixed(1)]]; },
+  metric(g){ return g.score; }, metricName:'Ziele'
+},
+
+flick:{
+  name:'Flickshots', cat:'aim', skill:'Flick', core:true,
+  desc:'Ein Ziel, das jedes Mal 12–34° neben deiner Blickrichtung erscheint. Erzwingt echte Flicks statt Mikro-Korrekturen.',
+  hint:'Ein Schuss pro Ziel · Fehlschuss kostet Punkte',
+  start(g){ g.targets=[spawnAtAngle(g,12,34,16,0.34*S.sizeMul)]; },
+  tick(){},
+  fire(g){
+    g.shots++;
+    const t=rayHitBest(g.targets);
+    if (t){ const s=proj(toCam(t.x,t.y,t.z)); registerHit(g,t,s.x,s.y); g.score++; }
+    else { registerMiss(g); g.score=Math.max(0,g.score-1); }
+    g.targets=[spawnAtAngle(g,12,34,16,0.34*S.sizeMul)];
+  },
+  stats(g){ return [['Score',g.score],['Accuracy',pc(g.hits,g.shots)],['Ø Flick-Zeit',ms(avg(g.ttk))],['Beste Serie',g.bestStreak]]; },
+  metric(g){ return g.score; }, metricName:'Score'
+},
+
+micro:{
+  name:'Micro-Flicks', cat:'aim', skill:'Präzision',
+  desc:'Kopfgroße Ziele, 2–8° Versatz. Das ist die Bewegung, die dir im Duell die Kopfhöhe rettet.',
+  hint:'Kleine Ziele · sauber statt schnell',
+  start(g){ g.targets=[spawnAtAngle(g,2,8,15,0.13*S.sizeMul)]; },
+  tick(){},
+  fire(g){
+    g.shots++;
+    const t=rayHitBest(g.targets);
+    if (t){ const s=proj(toCam(t.x,t.y,t.z)); registerHit(g,t,s.x,s.y,'HS'); sfx.head(); g.score++; }
+    else registerMiss(g);
+    g.targets=[spawnAtAngle(g,2,8,15,0.13*S.sizeMul)];
+  },
+  stats(g){ return [['Treffer',g.score],['Accuracy',pc(g.hits,g.shots)],['Ø Zeit',ms(avg(g.ttk))],['Beste Serie',g.bestStreak]]; },
+  metric(g){ return Math.round(pcNum(g.hits,g.shots)); }, metricName:'Acc %'
+},
+
+switching:{
+  name:'Target Switching', cat:'aim', skill:'Zielwechsel',
+  desc:'Sechs Ziele, alle müssen weg, dann kommt der nächste Satz. Misst die Zeit zwischen zwei Kills — genau das, was Multi-Kills entscheidet.',
+  hint:'Alle sechs Ziele leeren',
+  start(g){ this.set(g); },
+  set(g){ g.targets=[]; for(let i=0;i<6;i++) g.targets.push(slotTarget(g,0.3*S.sizeMul,5.0,1.0,3.2,16)); g.data.setStart=g.t; },
+  tick(){},
+  fire(g){
+    g.shots++;
+    const t=rayHitBest(g.targets);
+    if (t){
+      const s=proj(toCam(t.x,t.y,t.z)); t.dead=true;
+      g.hits++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak); g.score++;
+      const last=g.data.lastKill ?? g.data.setStart;
+      g.ttk.push((g.t-last)*1000); g.data.lastKill=g.t;
+      popFx(s.x,s.y,'+1','#25e0b8'); sfx.hit();
+      if (g.targets.every(x=>x.dead)){ this.set(g); g.data.lastKill=g.t; sfx.go(); }
+    } else registerMiss(g);
+  },
+  stats(g){ return [['Kills',g.score],['Accuracy',pc(g.hits,g.shots)],['Ø Wechsel',ms(avg(g.ttk))],['Bester Wechsel',ms(Math.min(...(g.ttk.length?g.ttk:[0])))]]; },
+  metric(g){ return g.score; }, metricName:'Kills'
+},
+
+tracking:{
+  name:'Smooth Tracking', cat:'aim', skill:'Tracking',
+  desc:'Ein Ziel auf weicher Bahn. Halte die Maustaste gedrückt und bleib drauf — gewertet wird der Anteil der Zeit auf dem Ziel.',
+  hint:'Maustaste halten und dranbleiben',
+  hold:true,
+  start(g){ g.targets=[{x:0,y:1.75,z:12,r:0.42*S.sizeMul,dead:false,ph:0}]; },
+  tick(g,dt){
+    const t=g.targets[0]; t.ph+=dt;
+    t.x = Math.sin(t.ph*0.85)*5.2 + Math.sin(t.ph*1.9)*1.4;
+    t.y = 1.75 + Math.sin(t.ph*1.35)*0.55;
+    t.z = 12 + Math.sin(t.ph*0.55)*2.2;
+    if (mouseDown){
+      g.trackTotal+=dt;
+      if (rayHitBest(g.targets)){ g.trackTime+=dt; g.score=Math.round(g.trackTime*10); }
+    }
+  },
+  stats(g){ return [['Zeit auf Ziel',(g.trackTime).toFixed(1)+' s'],['Trefferquote',pcNum(g.trackTime,g.trackTotal).toFixed(0)+' %'],['Feuerzeit',(g.trackTotal).toFixed(1)+' s']]; },
+  metric(g){ return Math.round(pcNum(g.trackTime,g.trackTotal)); }, metricName:'On-Target %'
+},
+
+strafetrack:{
+  name:'Strafe Tracking', cat:'aim', skill:'Tracking', core:true,
+  desc:'Das Ziel strafed wie ein echter Gegner: harte Richtungswechsel, wechselndes Tempo, gelegentliche Sprünge. Der realistischste Aim-Modus hier.',
+  hint:'Maustaste halten · Richtungswechsel lesen, nicht raten',
+  hold:true,
+  start(g){ g.targets=[{x:0,y:1.7,z:13,r:0.4*S.sizeMul,dead:false,dir:1,spd:4.2,next:0,vy:0,base:1.7}]; },
+  tick(g,dt){
+    const t=g.targets[0];
+    t.next-=dt;
+    if (t.next<=0){ t.dir=Math.random()<0.5?-1:1; t.spd=3.2+Math.random()*3.6; t.next=0.22+Math.random()*0.75;
+      if (Math.random()<0.22 && t.y<=t.base+0.01) t.vy=3.6; }
+    t.x += t.dir*t.spd*dt;
+    if (t.x>6.5){t.x=6.5;t.dir=-1;} if (t.x<-6.5){t.x=-6.5;t.dir=1;}
+    t.vy -= 9.8*dt; t.y += t.vy*dt;
+    if (t.y<t.base){t.y=t.base;t.vy=0;}
+    if (mouseDown){
+      g.trackTotal+=dt;
+      if (rayHitBest(g.targets)){ g.trackTime+=dt; g.score=Math.round(g.trackTime*10); }
+    }
+  },
+  stats(g){ return [['Zeit auf Ziel',(g.trackTime).toFixed(1)+' s'],['Trefferquote',pcNum(g.trackTime,g.trackTotal).toFixed(0)+' %'],['Feuerzeit',(g.trackTotal).toFixed(1)+' s']]; },
+  metric(g){ return Math.round(pcNum(g.trackTime,g.trackTotal)); }, metricName:'On-Target %'
+},
+
+reaction:{
+  name:'Reaktion', cat:'aim', skill:'Reflex',
+  desc:'Ein Ziel erscheint nach zufälliger Wartezeit. Schieß so schnell wie möglich. Zu früh geklickt zählt als Fehlstart.',
+  hint:'Warten · dann sofort schießen',
+  extraLabel:'Ø ms',
+  start(g){ g.targets=[]; g.data.wait = 0.8+Math.random()*2.2; g.data.armed=false; },
+  tick(g,dt){
+    if (!g.data.armed){
+      g.data.wait-=dt;
+      if (g.data.wait<=0){
+        g.data.armed=true; g.data.at=g.t;
+        g.targets=[spawnAtAngle(g,3,14,15,0.3*S.sizeMul)];
+        sfx.go();
+      }
+    }
+  },
+  fire(g){
+    if (!g.data.armed){ registerMiss(g,'zu früh'); g.shots++; g.score=Math.max(0,g.score-1); sfx.bad();
+      g.data.wait=0.8+Math.random()*2.2; return; }
+    g.shots++;
+    const t=rayHitBest(g.targets);
+    if (t){
+      const s=proj(toCam(t.x,t.y,t.z));
+      const rt=(g.t-g.data.at)*1000; g.react.push(rt);
+      g.hits++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak); g.score++;
+      popFx(s.x,s.y,Math.round(rt)+' ms','#25e0b8'); sfx.hit();
+    } else registerMiss(g);
+    g.targets=[]; g.data.armed=false; g.data.wait=0.7+Math.random()*2.1;
+  },
+  hudExtra(g){ return g.react.length?Math.round(avg(g.react)):'–'; },
+  stats(g){ return [['Ø Reaktion',ms(avg(g.react))],['Beste',ms(Math.min(...(g.react.length?g.react:[0])))],['Treffer',g.hits],['Accuracy',pc(g.hits,g.shots)]]; },
+  metric(g){ return g.react.length?Math.round(avg(g.react)):9999; }, metricName:'Ø ms', lowerBetter:true
+},
+
+/* ---------- RECOIL ---------- */
+spray:{
+  name:'Spray Control', cat:'spray', skill:'Recoil', core:true,
+  desc:'Volles Magazin auf eine Wand, 15 m. Das Muster ist dem echten nachempfunden — gewertet wird, wie eng deine Einschläge um den Punkt liegen.',
+  hint:'Maustaste halten · Rückstoß nach unten ausgleichen · R lädt nach',
+  hold:true, ammoHud:true, wallZ:15, aim:{x:0,y:1.75},
+  start(g){
+    g.holes=[]; g.data.idx=0; g.data.next=0; g.data.sprays=[]; g.data.cur=[]; g.data.ammo=WEAPONS[S.weapon].mag;
+    g.targets=[];
+  },
+  tick(g,dt){
+    const wp = WEAPONS[S.weapon];
+    if (g.data.reloadAt && g.t>=g.data.reloadAt){ g.data.reloadAt=0; this.reload(g); }
+    if (mouseDown && g.data.ammo>0){
+      g.data.next-=dt;
+      if (g.data.next<=0){
+        g.data.next = 1/wp.rps;
+        const p = wp.pat[Math.min(g.data.idx, wp.pat.length-1)];
+        const jx = (Math.random()-0.5)*0.30, jy=(Math.random()-0.5)*0.30;
+        const d = dirFrom(yaw + (p[0]+jx)*DEG, pitch + (p[1]+jy)*DEG);
+        const tt = (this.wallZ - P.z)/d.z;
+        if (tt>0){
+          const ix=P.x+d.x*tt, iy=P.y+d.y*tt;
+          const dist=Math.hypot(ix-this.aim.x, iy-this.aim.y);
+          g.holes.push({x:ix,y:iy,d:dist});
+          g.data.cur.push(dist);
+          if (g.holes.length>120) g.holes.shift();
+        }
+        g.data.idx++; g.data.ammo--; g.shots++; shot();
+        if (g.data.ammo<=0) this.finish(g);
+      }
+    } else {
+      g.data.next=0;
+      g.data.idx = Math.max(0, g.data.idx - dt*14);   // Recovery
+      if (g.data.idx<0.5) g.data.idx=0;
+      g.data.idx = Math.round(g.data.idx);
+    }
+  },
+  finish(g){
+    if (!g.data.cur.length) return;
+    const inR = g.data.cur.filter(d=>d<0.25).length;
+    const scr = Math.round(inR/g.data.cur.length*100);
+    g.data.sprays.push({score:scr, avg:avg(g.data.cur)});
+    g.data.reloadAt = g.t + 1.6;
+    g.hits += inR;
+    g.score = Math.round(avg(g.data.sprays.map(s=>s.score)));
+    popFx(W/2,H*0.35, scr+' %', scr>=70?'#25e0b8':'#ffb43a');
+    scr>=70?sfx.go():sfx.tick();
+  },
+  reload(g){ g.data.ammo=WEAPONS[S.weapon].mag; g.data.idx=0; g.data.cur=[]; g.holes=[]; sfx.tick(); },
+  draw(g){
+    // Wand
+    fillQuad([[-9,0,this.wallZ],[9,0,this.wallZ],[9,6,this.wallZ],[-9,6,this.wallZ]], '#20303d', 'rgba(120,150,175,.3)');
+    // Zielpunkt + Ringe
+    for (const [rad,col] of [[0.25,'rgba(37,224,184,.5)'],[0.5,'rgba(120,150,175,.28)']]){
+      ctx.beginPath();
+      for (let a=0;a<=32;a++){
+        const th=a/32*6.2832;
+        const c=toCam(this.aim.x+Math.cos(th)*rad, this.aim.y+Math.sin(th)*rad, this.wallZ);
+        if (c.z<NEAR) continue; const s=proj(c); a?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y);
+      }
+      ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    const cc=toCam(this.aim.x,this.aim.y,this.wallZ);
+    if (cc.z>NEAR){ const s=proj(cc); ctx.beginPath(); ctx.arc(s.x,s.y,3,0,6.2832); ctx.fillStyle='#ff4655'; ctx.fill(); }
+    // Einschläge
+    for (const h of g.holes){
+      const c=toCam(h.x,h.y,this.wallZ); if (c.z<NEAR) continue;
+      const s=proj(c), r=Math.max(1.5, 0.035*focal/c.z);
+      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,6.2832);
+      ctx.fillStyle = h.d<0.25 ? 'rgba(37,224,184,.9)' : 'rgba(20,26,32,.95)';
+      ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=1; ctx.stroke();
+    }
+  },
+  hudExtra(g){ return g.data.sprays.length; },
+  extraLabel:'Sprays',
+  stats(g){
+    const all=g.data.sprays.map(s=>s.score);
+    return [['Ø Gruppierung',(all.length?Math.round(avg(all)):0)+' %'],
+            ['Bester Spray',(all.length?Math.max(...all):0)+' %'],
+            ['Ø Abweichung',(g.holes.length?(avg(g.data.sprays.map(s=>s.avg))*100).toFixed(1):'0')+' cm'],
+            ['Magazine',g.data.sprays.length]];
+  },
+  metric(g){ return g.score; }, metricName:'Ø %'
+},
+
+/* ---------- MOVEMENT ---------- */
+counterstrafe:{
+  name:'Counterstrafe', cat:'move', skill:'Movement', core:true, meters:true,
+  desc:'Der Pfeil sagt, wohin du strafen musst. Sobald das Ziel erscheint: gegentippen, warten bis du wirklich steht, schießen. Schüsse über 1,0 m/s zählen als Miss.',
+  hint:'A / D strafen · Gegenrichtung tippen · erst schießen wenn der Balken grün ist',
+  extraLabel:'Ø Zeit',
+  move:true,
+  start(g){ g.data.phase='strafe'; g.data.dir=Math.random()<0.5?-1:1; g.data.hold=0; g.data.wait=0; g.targets=[]; g.data.speeds=[]; },
+  tick(g,dt){
+    const sp = Math.hypot(P.vx,P.vz);
+    if (g.data.phase==='strafe'){
+      const good = (g.data.dir<0 && keys.KeyA) || (g.data.dir>0 && keys.KeyD);
+      if (good && sp>4.5){ g.data.hold+=dt; } else { g.data.hold=0; }
+      if (g.data.hold>0.25){
+        g.data.phase='shoot'; g.data.at=g.t;
+        g.targets=[spawnAtAngle(g,4,16,15,0.32*S.sizeMul)];
+        g.targets[0].born=g.t; sfx.go();
+      }
+    }
+  },
+  fire(g){
+    if (g.data.phase!=='shoot'){ g.shots++; registerMiss(g,'noch nicht'); return; }
+    g.shots++;
+    const sp=Math.hypot(P.vx,P.vz);
+    const t=rayHitBest(g.targets);
+    g.data.speeds.push(sp);
+    if (t && sp<=1.0){
+      const s=proj(toCam(t.x,t.y,t.z));
+      const rt=(g.t-g.data.at)*1000; g.ttk.push(rt);
+      g.hits++; g.score++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak);
+      popFx(s.x,s.y,Math.round(rt)+' ms','#25e0b8'); sfx.hit();
+    } else if (t){
+      registerMiss(g,'zu schnell'); sfx.bad();
+    } else {
+      registerMiss(g);
+    }
+    g.targets=[]; g.data.phase='strafe'; g.data.hold=0;
+    g.data.dir = Math.random()<0.5?-1:1;
+  },
+  draw(g){
+    if (g.data.phase==='strafe'){
+      const cue = g.data.dir<0 ? '◀  A  strafen' : 'strafen  D  ▶';
+      hud.cue.textContent = cue; hud.cue.classList.remove('hidden');
+    } else hud.cue.classList.add('hidden');
+  },
+  hudExtra(g){ return g.ttk.length?Math.round(avg(g.ttk))+'ms':'–'; },
+  stats(g){
+    const clean = g.data.speeds.filter(s=>s<=1.0).length;
+    return [['Saubere Kills',g.score],['Accuracy',pc(g.hits,g.shots)],
+            ['Ø Stop→Schuss',ms(avg(g.ttk))],
+            ['Stand-Quote',(g.data.speeds.length?Math.round(clean/g.data.speeds.length*100):0)+' %'],
+            ['Ø Tempo b. Schuss',(g.data.speeds.length?avg(g.data.speeds).toFixed(2):'0.00')+' m/s']];
+  },
+  metric(g){ return g.score; }, metricName:'Kills'
+},
+
+peek:{
+  name:'One-and-Done Peek', cat:'move', skill:'Movement', core:true, meters:true,
+  desc:'Aus der Deckung raus, ein Duell, zurück. Der Gegner schießt nach 320 ms Sichtkontakt. Gewertet wird deine Zeit im Freien — genau die Disziplin, die dir Runden rettet.',
+  hint:'D peeken · A zurück in Deckung · maximal ein Schuss',
+  extraLabel:'Ø Exposure',
+  move:true, cover:{z:6, x1:-14, x2:1.2, h:3.4},
+  start(g){
+    P.x=1.35; P.z=0;
+    g.data.enemy={x:-3.2,y:1.62,z:20,r:0.34*S.sizeMul,dead:false};
+    g.data.expo=0; g.data.seen=0; g.data.deaths=0; g.data.exposures=[]; g.data.state='ready'; g.data.cool=0;
+    g.targets=[g.data.enemy];
+  },
+  visible(g){
+    const c=this.cover, e=g.data.enemy;
+    return !segCross(P.x,P.z, e.x,e.z, c.x1,c.z, c.x2,c.z);
+  },
+  tick(g,dt){
+    const vis = this.visible(g) && !g.data.enemy.dead;
+    g.data.enemy.hidden = !this.visible(g);
+    if (g.data.cool>0){ g.data.cool-=dt; if (g.data.cool<=0){ g.data.enemy.dead=false; g.data.state='ready'; g.data.expo=0; g.data.seen=0; } return; }
+    if (vis){
+      g.data.expo+=dt; g.data.seen+=dt;
+      if (g.data.seen>0.32){                 // Gegner erwidert das Feuer
+        g.data.deaths++; g.data.streakBroken=true; g.streak=0;
+        popFx(W/2,H/2,'ERWISCHT','#ff4655'); sfx.bad();
+        g.data.cool=1.2; g.data.enemy.dead=true;
+        g.data.exposures.push(g.data.expo*1000);
+      }
+    } else {
+      g.data.seen=Math.max(0,g.data.seen-dt*2.5);
+      if (g.data.state==='ready') g.data.expo=0;
+    }
+  },
+  fire(g){
+    if (g.data.cool>0) return;
+    g.shots++;
+    const sp=Math.hypot(P.vx,P.vz);
+    const t = (!g.data.enemy.hidden && !g.data.enemy.dead) ? rayHitBest([g.data.enemy]) : null;
+    if (t && sp<=1.2){
+      const s=proj(toCam(t.x,t.y,t.z));
+      g.hits++; g.score++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak);
+      g.data.exposures.push(g.data.expo*1000);
+      popFx(s.x,s.y, Math.round(g.data.expo*1000)+' ms','#25e0b8'); sfx.head();
+      g.data.enemy.dead=true; g.data.cool=1.1;
+      // Neue Position für den Gegner
+      g.data.enemy.x=-2.2-Math.random()*3.4; g.data.enemy.z=17+Math.random()*6; g.data.enemy.y=1.5+Math.random()*0.35;
+    } else if (t){ registerMiss(g,'zu schnell'); }
+    else registerMiss(g);
+  },
+  draw(g){
+    const c=this.cover;
+    fillQuad([[c.x1,0,c.z],[c.x2,0,c.z],[c.x2,c.h,c.z],[c.x1,c.h,c.z]], '#26333f', 'rgba(140,170,195,.4)');
+    fillQuad([[c.x1,c.h,c.z],[c.x2,c.h,c.z],[c.x2,c.h,c.z-0.4],[c.x1,c.h,c.z-0.4]], '#31414f', null);
+    hud.cue.classList.add('hidden');
+  },
+  hudExtra(g){ return g.data.exposures.length?Math.round(avg(g.data.exposures))+'ms':'–'; },
+  stats(g){
+    return [['Kills',g.score],['Getroffen worden',g.data.deaths],
+            ['Ø Exposure',ms(avg(g.data.exposures))],
+            ['Kürzeste',ms(g.data.exposures.length?Math.min(...g.data.exposures):0)],
+            ['Accuracy',pc(g.hits,g.shots)]];
+  },
+  metric(g){ return g.score; }, metricName:'Kills'
+},
+
+strafeshoot:{
+  name:'Strafe & Shoot', cat:'move', skill:'Movement',
+  desc:'Dauerlauf zwischen zwei Marken, Ziele erscheinen laufend. Du musst permanent zwischen Bewegung und sauberem Stopp umschalten.',
+  hint:'A / D dauerhaft wechseln · nur im Stand schießen',
+  extraLabel:'Stand-Quote', move:true, meters:true,
+  start(g){ g.targets=[slotTarget(g,0.34*S.sizeMul,5.5,1.1,3.0,16)]; g.data.speeds=[]; },
+  tick(g,dt){},
+  fire(g){
+    g.shots++;
+    const sp=Math.hypot(P.vx,P.vz); g.data.speeds.push(sp);
+    const t=rayHitBest(g.targets);
+    if (t && sp<=1.0){
+      const s=proj(toCam(t.x,t.y,t.z));
+      g.hits++; g.score++; g.streak++; g.bestStreak=Math.max(g.bestStreak,g.streak);
+      g.ttk.push((g.t-t.born)*1000);
+      popFx(s.x,s.y,'+1','#25e0b8'); sfx.hit();
+      g.targets=[slotTarget(g,0.34*S.sizeMul,5.5,1.1,3.0,16)];
+    } else if (t){ registerMiss(g,'zu schnell'); }
+    else registerMiss(g);
+  },
+  hudExtra(g){ const c=g.data.speeds.filter(s=>s<=1.0).length; return g.data.speeds.length?Math.round(c/g.data.speeds.length*100)+'%':'–'; },
+  stats(g){
+    const clean=g.data.speeds.filter(s=>s<=1.0).length;
+    return [['Kills',g.score],['Accuracy',pc(g.hits,g.shots)],
+            ['Stand-Quote',(g.data.speeds.length?Math.round(clean/g.data.speeds.length*100):0)+' %'],
+            ['Ø TTK',ms(avg(g.ttk))]];
+  },
+  metric(g){ return g.score; }, metricName:'Kills'
+}
+};
+
+/* ---------- Routine ---------- */
+const ROUTINES = {
+  warmup:{name:'Warmup · 5 min', desc:'Reaktion → Gridshot → Micro-Flicks → Strafe Tracking → Counterstrafe. Der Ablauf, bevor du in die Queue gehst.',
+    steps:[['reaction',45],['gridshot',60],['micro',60],['strafetrack',60],['counterstrafe',60]]},
+  duel:{name:'Duell-Block · 6 min', desc:'Alles, was ein Duell entscheidet: Peeken, stehen, treffen, Spray nachziehen.',
+    steps:[['micro',60],['counterstrafe',90],['peek',90],['spray',60],['flick',60]]},
+  full:{name:'Voller Durchlauf · 10 min', desc:'Jeder Modus einmal. Gut für einen Standortcheck alle paar Wochen.',
+    steps:[['reaction',40],['gridshot',60],['flick',60],['micro',60],['switching',60],['tracking',60],['strafetrack',60],['spray',60],['counterstrafe',75],['peek',75]]}
+};
+
+/* =========================================================================
+   9 · Helfer
+   ========================================================================= */
+const avg = a => a && a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const pcNum = (a,b) => b>0 ? a/b*100 : 0;
+const pc = (a,b) => b>0 ? Math.round(a/b*100)+' %' : '–';
+const ms = v => v>0 ? Math.round(v)+' ms' : '–';
+
+/* =========================================================================
+   10 · Eingabe
+   ========================================================================= */
+addEventListener('keydown', e=>{
+  keys[e.code]=true;
+  if (e.code==='Escape' && running && !paused){ /* pointerlockchange übernimmt */ }
+  if (e.code==='KeyR' && running && G && G.M.reload) G.M.reload(G);
+  if (['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', e=>{ keys[e.code]=false; });
+addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; mouseDown=false; });
+
+cv.addEventListener('mousedown', e=>{
+  if (!running) return;
+  if (!locked){ cv.requestPointerLock(); return; }
+  if (e.button===0){ mouseDown=true; if (!G.M.hold && G.M.fire) G.M.fire(G); }
+});
+addEventListener('mouseup', e=>{ if(e.button===0) mouseDown=false; });
+
+document.addEventListener('pointerlockchange', ()=>{
+  locked = document.pointerLockElement === cv;
+  if (running){
+    if (locked){ paused=false; hidePause(); }
+    else { paused=true; mouseDown=false; showPause('Pausiert','Klick, um weiterzumachen.'); }
+  }
+});
+document.addEventListener('mousemove', e=>{
+  if (!locked || paused) return;
+  const k = S.sens * 0.07 * DEG;         // Valorant: 0,07° pro Count
+  yaw   += e.movementX * k;
+  pitch -= e.movementY * k;
+  const lim = 89*DEG;
+  pitch = Math.max(-lim, Math.min(lim, pitch));
+});
+
+/* =========================================================================
+   11 · Bewegung (Valorant-nah)
+   ========================================================================= */
+const RUN = 6.75, ACC = 55, FRIC = 34, COUNTER = 130;
+function movePlayer(dt){
+  let ix=0, iz=0;
+  if (keys.KeyA) ix-=1; if (keys.KeyD) ix+=1;
+  if (keys.KeyW) iz+=1; if (keys.KeyS) iz-=1;
+  const len=Math.hypot(ix,iz);
+  let wx=0, wz=0;
+  if (len>0){
+    ix/=len; iz/=len;
+    wx = R.x*ix + F.x*iz;
+    wz = R.z*ix + F.z*iz;
+    const l2=Math.hypot(wx,wz); wx/=l2; wz/=l2;
+  }
+  const sp = Math.hypot(P.vx,P.vz);
+  if (len>0){
+    const dot = sp>0.01 ? (wx*P.vx + wz*P.vz)/sp : 1;
+    const a = dot < -0.2 ? COUNTER : ACC;     // Gegentippen bremst hart
+    P.vx += wx*a*dt; P.vz += wz*a*dt;
+    const s2=Math.hypot(P.vx,P.vz);
+    if (s2>RUN){ P.vx*=RUN/s2; P.vz*=RUN/s2; }
+    if (dot<-0.2 && s2<0.6){ P.vx=0; P.vz=0; }
+  } else if (sp>0){
+    const dec=Math.min(sp, FRIC*dt);
+    P.vx -= P.vx/sp*dec; P.vz -= P.vz/sp*dec;
+    if (Math.hypot(P.vx,P.vz)<0.05){P.vx=0;P.vz=0;}
+  }
+  P.x += P.vx*dt; P.z += P.vz*dt;
+  P.x = Math.max(-16, Math.min(16, P.x));
+  P.z = Math.max(-6, Math.min(11, P.z));
+}
+
+/* =========================================================================
+   12 · Loop
+   ========================================================================= */
+const hud = {
+  time:document.getElementById('hTime'), score:document.getElementById('hScore'),
+  acc:document.getElementById('hAcc'), extra:document.getElementById('hExtra'),
+  extraK:document.getElementById('hExtraK'), meters:document.getElementById('hMeters'),
+  speed:document.getElementById('mSpeed'), speedV:document.getElementById('mSpeedV'),
+  zone:document.getElementById('mZone'), expo:document.getElementById('mExpose'),
+  expoV:document.getElementById('mExposeV'), expoWrap:document.getElementById('mExposeWrap'),
+  cue:document.getElementById('hCue'), hint:document.getElementById('hHint'),
+  ammo:document.getElementById('hAmmo'), ammoN:document.getElementById('hAmmoN'), ammoW:document.getElementById('hAmmoW')
+};
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  requestAnimationFrame(frame);
+  if (!running || !G){ ctx.clearRect(0,0,W,H); return; }
+
+  if (!paused){
+    G.t += dt; G.left = Math.max(0, G.dur - G.t);
+    basis();
+    if (G.M.move) movePlayer(dt);
+    G.M.tick(G, dt);
+    if (G.left<=0){ endGame(); return; }
+  } else basis();
+
+  // Render
+  drawWorld();
+  if (G.M.draw) G.M.draw(G);
+  drawTargets(G.targets);
+  drawFx(paused?0:dt);
+  drawXhair(ctx, W/2, H/2, S);
+
+  // HUD
+  hud.time.textContent = Math.ceil(G.left);
+  hud.score.textContent = G.score;
+  hud.acc.textContent = G.M.hold && !G.M.ammoHud ? pcNum(G.trackTime,G.trackTotal).toFixed(0)+'%' : pc(G.hits,G.shots);
+  hud.extra.textContent = G.M.hudExtra ? G.M.hudExtra(G) : G.streak;
+  if (G.M.meters){
+    const sp=Math.hypot(P.vx,P.vz);
+    hud.speed.style.width = Math.min(100, sp/RUN*100)+'%';
+    hud.speed.style.background = sp<=1.0 ? 'var(--ok)' : 'var(--sig)';
+    hud.zone.style.width = (1.0/RUN*100)+'%';
+    hud.speedV.textContent = sp.toFixed(2)+' m/s';
+    if (G.id==='peek'){
+      hud.expoWrap.classList.remove('hidden');
+      const e=(G.data.expo||0)*1000;
+      hud.expo.style.width = Math.min(100, e/900*100)+'%';
+      hud.expo.style.background = e<320?'var(--ok)':(e<600?'var(--warn)':'var(--sig)');
+      document.getElementById('mEZone').style.width = (320/900*100)+'%';
+      hud.expoV.textContent = Math.round(e)+' ms';
+    } else hud.expoWrap.classList.add('hidden');
+  }
+  if (G.M.ammoHud){ hud.ammoN.textContent=G.data.ammo; hud.ammoW.textContent=WEAPONS[S.weapon].name; }
+}
+requestAnimationFrame(frame);
+
+/* =========================================================================
+   13 · UI
+   ========================================================================= */
+const elPause=document.getElementById('pause'), elMenu=document.getElementById('menu'), elRes=document.getElementById('results');
+function showPause(t,x){ document.getElementById('pTitle').textContent=t; document.getElementById('pText').textContent=x; elPause.classList.remove('hidden'); }
+function hidePause(){ elPause.classList.add('hidden'); }
+document.getElementById('pResume').onclick = ()=>cv.requestPointerLock();
+document.getElementById('pQuit').onclick = ()=>{ running=false; queue=[]; hidePause();
+  document.getElementById('hud').classList.add('hidden'); elMenu.classList.remove('hidden'); };
+
+function bestKey(id){ return 'best_'+id; }
+function renderMenu(){
+  const groups = {aim:'gridAim', spray:'gridSpray', move:'gridMove'};
+  for (const k in groups) document.getElementById(groups[k]).innerHTML='';
+  for (const id in MODES){
+    const M=MODES[id];
+    const b=BEST[id];
+    const el=document.createElement('button');
+    el.className='card cut';
+    el.innerHTML = `<span class="skill${M.core?' core':''}">${M.skill}</span>
+      <h3>${M.name}</h3><p>${M.desc}</p>
+      <div class="best"><span>${M.metricName}</span><b>${b!=null?b:'—'}</b></div>`;
+    el.onclick=()=>{ queue=[]; newGame(id); };
+    document.getElementById(groups[M.cat]).appendChild(el);
+  }
+  const rg=document.getElementById('gridRoutine'); rg.innerHTML='';
+  for (const id in ROUTINES){
+    const Rn=ROUTINES[id];
+    const el=document.createElement('button');
+    el.className='card cut';
+    el.innerHTML=`<span class="skill core">Routine</span><h3>${Rn.name}</h3><p>${Rn.desc}</p>
+      <div class="best"><span>${Rn.steps.length} Stationen</span><b>${Math.round(Rn.steps.reduce((a,s)=>a+s[1],0)/60)} min</b></div>`;
+    el.onclick=()=>{ queue=Rn.steps.slice(); session.length=0; const s=queue.shift(); newGame(s[0], s[1]); };
+    rg.appendChild(el);
+  }
+  updateSensBadge();
+}
+
+function coachLine(g){
+  const acc = pcNum(g.hits,g.shots), t=avg(g.ttk);
+  if (g.id==='peek'){
+    const e=avg(g.data.exposures);
+    if (g.data.deaths > g.score) return 'Du bist länger draußen als das Duell dauert. Ziel: raus, ein Schuss, rein — die Entscheidung fällt, bevor du peekst, nicht danach.';
+    if (e>500) return `Ø ${Math.round(e)} ms im Freien. Unter 400 ms bist du für die meisten Gegner nicht mehr rechtzeitig treffbar. Crosshair vor dem Peek schon auf die Winkelkante legen.`;
+    return `Sauber: Ø ${Math.round(e)} ms Exposure bei ${g.score} Kills. Genau dieses Muster in der Ranked-Runde wiederholen.`;
+  }
+  if (g.id==='counterstrafe'){
+    const clean = g.data.speeds.length ? g.data.speeds.filter(s=>s<=1).length/g.data.speeds.length : 0;
+    if (clean<0.7) return `Nur ${Math.round(clean*100)} % deiner Schüsse kamen im Stand. Das ist die teuerste Lücke im Spiel — tippe die Gegenrichtung kurz an, statt die Taste nur loszulassen.`;
+    if (t>600) return `Stand ist sauber, aber ${Math.round(t)} ms vom Ziel bis zum Schuss ist langsam. Crosshair-Placement auf Kopfhöhe halten, dann brauchst du den Flick nicht.`;
+    return 'Stopp und Schuss sitzen. Nimm den nächsten Durchlauf mit kleinerer Zielgröße.';
+  }
+  if (g.id==='spray'){
+    const a=g.data.sprays.map(s=>s.score);
+    if (!a.length) return 'Kein volles Magazin geleert. Halte durch bis zum letzten Schuss — die Kugeln 10 bis 20 sind der Teil, den fast niemand übt.';
+    const m=avg(a);
+    if (m<45) return `${Math.round(m)} % im Kreis. Die ersten vier Kugeln gehen fast gerade hoch — zieh in dieser Zeit gleichmäßig nach unten, nicht ruckartig. Erst danach kommt die Seitwärtsbewegung.`;
+    if (m<70) return `${Math.round(m)} % im Kreis. Der vertikale Teil sitzt, die horizontale Korrektur ab Kugel 13 noch nicht. Nimm bewusst nur die ersten 15 Kugeln, bis die Bahn sitzt.`;
+    return `${Math.round(m)} % — das ist Spray-Kontrolle, die in echten Duellen hält. Wechsle mal die Waffe, das Muster ist deutlich anders.`;
+  }
+  if (g.M.hold){
+    const on=pcNum(g.trackTime,g.trackTotal);
+    if (on<45) return `${Math.round(on)} % auf dem Ziel. Du reagierst auf die Bewegung statt sie zu führen — schau auf die Hüfte des Ziels, nicht auf dein Crosshair.`;
+    if (on<65) return `${Math.round(on)} % ist solide. Der Verlust liegt fast immer im Richtungswechsel: dort weniger Arm, mehr Handgelenk.`;
+    return `${Math.round(on)} % — sehr gut. Erhöhe die Schwierigkeit über kleinere Ziele statt über längere Runden.`;
+  }
+  if (g.id==='reaction'){
+    const r=avg(g.react);
+    if (!g.react.length) return 'Keine gültige Reaktion gemessen. Warte auf das Ziel, statt vorher zu klicken.';
+    if (r>320) return `${Math.round(r)} ms. Ein großer Teil davon ist Weg zum Ziel, nicht Reaktion — halte das Crosshair näher an der Bildmitte in Ruhestellung.`;
+    return `${Math.round(r)} ms ist überdurchschnittlich. Reaktion ist selten dein Limit; investiere die Zeit lieber in Counterstrafe und Peek.`;
+  }
+  if (acc<55) return `${Math.round(acc)} % Accuracy. Du schießt schneller als du zielst. Nimm bewusst 15 % Tempo raus — Score über Accuracy ist fast immer ein Netto-Verlust.`;
+  if (acc>88 && t>620) return `${Math.round(acc)} % bei Ø ${Math.round(t)} ms. Du bist zu vorsichtig: geh aufs Ziel zu, statt es einzukreisen. Etwas weniger Accuracy für deutlich mehr Tempo ist hier der bessere Trade.`;
+  if (acc>78) return `${Math.round(acc)} % bei Ø ${Math.round(t)} ms — gute Balance. Halte diese Accuracy und drück das Tempo schrittweise.`;
+  return `${Math.round(acc)} % bei Ø ${Math.round(t)} ms. Ziel für den nächsten Lauf: gleiche Trefferzahl, aber 5 Punkte mehr Accuracy.`;
+}
+
+async function showResults(){
+  const g=G, M=g.M;
+  document.getElementById('rMode').textContent=M.name;
+  document.getElementById('rSub').textContent=`${g.dur} Sekunden · Sens ${S.sens.toFixed(3)}`;
+  const rows=M.stats(g);
+  document.getElementById('rStats').innerHTML = rows.map(([k,v])=>
+    `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  document.getElementById('rCoach').textContent = coachLine(g);
+
+  // Bestwert
+  const m=M.metric(g), prev=BEST[g.id];
+  let isBest=false;
+  if (prev==null || (M.lowerBetter ? m<prev : m>prev)){ BEST[g.id]=m; isBest=true; await store.set(bestKey(g.id), m); }
+  document.getElementById('rBest').innerHTML = isBest
+    ? `<span class="newbest">Neuer Bestwert</span><br>${M.metricName}: <b>${m}</b>`
+    : `${M.metricName}: <b>${m}</b> · Best: <b>${prev}</b>`;
+
+  session.push({mode:M.name, score:g.score, acc:pc(g.hits,g.shots), detail:rows[2]?rows[2][1]:'–'});
+  const hw=document.getElementById('rHistWrap');
+  if (session.length>1){
+    hw.classList.remove('hidden');
+    document.getElementById('rHist').innerHTML = session.map((s,i)=>
+      `<tr><td>${i+1}</td><td>${s.mode}</td><td class="n">${s.score}</td><td class="n">${s.acc}</td><td class="n">${s.detail}</td></tr>`).join('');
+  } else hw.classList.add('hidden');
+
+  document.getElementById('rNext').classList.toggle('hidden', queue.length===0);
+  document.getElementById('rAgain').classList.toggle('hidden', queue.length>0);
+  elRes.classList.remove('hidden');
+  renderMenu();
+}
+document.getElementById('rAgain').onclick = ()=>newGame(G.id, G.dur);
+document.getElementById('rNext').onclick = ()=>{ const s=queue.shift(); newGame(s[0], s[1]); };
+document.getElementById('rMenu').onclick = ()=>{ queue=[]; elRes.classList.add('hidden'); elMenu.classList.remove('hidden'); };
+
+/* ---------- Einstellungen ---------- */
+const xhCv=document.getElementById('xhCv'), xhCtx=xhCv.getContext('2d');
+function drawPreview(){
+  xhCtx.clearRect(0,0,400,200);
+  xhCtx.fillStyle='#12261a'; xhCtx.fillRect(0,0,400,200);
+  xhCtx.beginPath(); xhCtx.arc(200,100,26,0,6.2832); xhCtx.fillStyle='#33553f'; xhCtx.fill();
+  xhCtx.save(); xhCtx.scale(2,2); drawXhair(xhCtx,100,50,S); xhCtx.restore();
+}
+function updateSensBadge(){
+  const counts360 = 360/(0.07*S.sens);
+  const cm = counts360/S.dpi*2.54;
+  document.getElementById('bSens').textContent=S.sens.toFixed(3);
+  document.getElementById('bDpi').textContent=S.dpi;
+  document.getElementById('bEdpi').textContent=Math.round(S.sens*S.dpi);
+  document.getElementById('bCm').textContent=cm.toFixed(1);
+}
+const bind = (id, key, fmt, extra)=>{
+  const el=document.getElementById(id);
+  const set=()=>{
+    S[key] = el.type==='checkbox' ? el.checked : (el.type==='number'||el.type==='range' ? parseFloat(el.value) : el.value);
+    if (fmt) document.getElementById(fmt.el).textContent = fmt.f(S[key]);
+    if (extra) extra();
+    drawPreview(); updateSensBadge(); saveSettings();
+  };
+  el.addEventListener('input', set);
+  return el;
+};
+const inputs = {
+  sSens:bind('sSens','sens',{el:'vSens',f:v=>v.toFixed(3)}),
+  sDpi:bind('sDpi','dpi'),
+  sDur:bind('sDur','dur',{el:'vDur',f:v=>v+' s'}),
+  sSize:bind('sSize','sizeMul'),
+  sWeap:bind('sWeap','weapon'),
+  sXcol:bind('sXcol','xcol'),
+  sGap:bind('sGap','gap',{el:'vGap',f:v=>v}),
+  sLen:bind('sLen','len',{el:'vLen',f:v=>v}),
+  sThick:bind('sThick','thick',{el:'vThick',f:v=>v}),
+  sDot:bind('sDot','dot'),
+  sOutline:bind('sOutline','outline'),
+  sSound:bind('sSound','sound')
+};
+// sizeMul kommt als Prozent aus dem Slider
+document.getElementById('sSize').addEventListener('input', e=>{
+  S.sizeMul = parseFloat(e.target.value)/100;
+  document.getElementById('vSize').textContent = e.target.value+' %';
+  saveSettings();
+});
+async function saveSettings(){ await store.set('settings', S); }
+function applySettingsToUI(){
+  document.getElementById('sSens').value=S.sens;   document.getElementById('vSens').textContent=S.sens.toFixed(3);
+  document.getElementById('sDpi').value=S.dpi;
+  document.getElementById('sDur').value=S.dur;     document.getElementById('vDur').textContent=S.dur+' s';
+  document.getElementById('sSize').value=Math.round(S.sizeMul*100); document.getElementById('vSize').textContent=Math.round(S.sizeMul*100)+' %';
+  document.getElementById('sWeap').value=S.weapon;
+  document.getElementById('sXcol').value=S.xcol;
+  document.getElementById('sGap').value=S.gap;     document.getElementById('vGap').textContent=S.gap;
+  document.getElementById('sLen').value=S.len;     document.getElementById('vLen').textContent=S.len;
+  document.getElementById('sThick').value=S.thick; document.getElementById('vThick').textContent=S.thick;
+  document.getElementById('sDot').checked=S.dot;
+  document.getElementById('sOutline').checked=S.outline;
+  document.getElementById('sSound').checked=S.sound;
+  drawPreview(); updateSensBadge();
+}
+document.getElementById('bReset').onclick = async ()=>{
+  for (const id in MODES){ BEST[id]=null; delete BEST[id]; await store.set(bestKey(id), null); }
+  renderMenu();
+};
+
+/* =========================================================================
+   14 · Start
+   ========================================================================= */
+(async function init(){
+  resize();
+  const saved = await store.get('settings');
+  if (saved) Object.assign(S, saved);
+  for (const id in MODES){ const b = await store.get(bestKey(id)); if (b!=null) BEST[id]=b; }
+  applySettingsToUI();
+  renderMenu();
+})();
+</script>
+</body>
+</html>
