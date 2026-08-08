@@ -40,6 +40,7 @@ export const counterstrafe: ModeDef = {
     g.data.hold = richtig && speed(g.player) > STRAFE_SPEED ? g.data.hold + dt : 0
     if (g.data.hold <= STRAFE_HOLD) return
     g.data.phase = 'shoot'
+    g.cue = null
     g.data.at = g.t
     g.targets = [spawnAtAngle(g, 4, 16, 15, 0.32 * g.settings.sizeMul)]
     play(g, 'go')

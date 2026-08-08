@@ -96,6 +96,22 @@ describe('counterstrafe', () => {
     expect(SHOOT_SPEED).toBe(1.0)
   })
 
+  it('loescht den Hinweis sobald das Ziel erscheint', () => {
+    const g = start(counterstrafe)
+    const richtung = g.data.dir > 0 ? 'KeyD' : 'KeyA'
+    const input = { keys: { [richtung]: true }, mouseDown: false }
+    for (let i = 0; i < 100; i++) {
+      tick(g, input, 0.01)
+      if (g.data.phase === 'shoot') {
+        // In dem Tick, in dem wechselt wird: Ziel vorhanden UND Hinweis geloescht?
+        expect(g.targets).toHaveLength(1)
+        expect(g.cue).toBe(null)
+        return
+      }
+    }
+    throw new Error('never reached shoot phase')
+  })
+
   it('meldet die Stand-Quote in den Stats', () => {
     const g = start(counterstrafe)
     g.data.speeds = [0.2, 0.5, 4.0, 0.1]
