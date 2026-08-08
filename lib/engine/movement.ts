@@ -7,7 +7,7 @@ export const RUN = 6.75
 export const ACC = 55
 /** Verzögerung beim Loslassen aller Tasten. */
 export const FRIC = 34
-/** Verzögerung beim Antippen der Gegenrichtung – der Kern des Counterstrafens. */
+/** Verzögerung beim Antippen der Gegenrichtung — der Kern des Counterstrafens. */
 export const COUNTER = 130
 /** Augenhöhe über dem Boden. */
 export const EYE = 1.65
@@ -28,7 +28,7 @@ export function createPlayer(): Player {
  *
  * Die Richtung wird aus der Kamerabasis gebildet, damit WASD relativ zum Blick
  * wirkt. Zeigt die Eingabe der aktuellen Bewegung entgegen, greift statt der
- * normalen Beschleunigung die deutlich härtere COUNTER-Verzögerung – das ist
+ * normalen Beschleunigung die deutlich härtere COUNTER-Verzögerung — das ist
  * das Verhalten, das Counterstrafen im Spiel überhaupt erst möglich macht.
  */
 export function movePlayer(
