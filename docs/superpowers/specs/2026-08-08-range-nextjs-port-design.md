@@ -199,3 +199,19 @@ ist nicht Teil dieses Projekts.
 - Kein Auth, kein Backend, keine Cloud-Synchronisierung.
 - Das Deployment-Ziel ist offen. Nichts in dieser Architektur schließt Vercel aus; alle Seiten sind
   client-lastig und statisch auslieferbar.
+
+## Offene Pflichten für Phase 2
+
+Diese Punkte sind in Phase 1 bewusst offen geblieben und müssen in Phase 2 erfüllt werden.
+
+**Die Bildschleife muss `dt` klemmen.** `lib/engine/game.ts` exportiert `MAX_DT = 0.05`. Die
+Engine klemmt selbst *nicht* — das würde fünf Tests brechen, von denen einer ausdrücklich die
+unveränderte Weitergabe von `dt` zusichert und vier große Zeitschritte zum Vorspulen nutzen. Ohne
+Deckel im Aufrufer degradieren still: die Bewegungsintegration, der Counterstrafe-Stopp, das
+320-Millisekunden-Fenster in Peek und der Feuertakt im Spray-Modus. Das Original klemmte an
+derselben Stelle. Die `useFrame`-Schleife muss also `Math.min(delta, MAX_DT)` an `tick` übergeben.
+
+**Stummschalten liegt bei der Ansicht.** `play()` reiht Töne bedingungslos in `g.sounds` ein und
+liest `settings.sound` nicht. Die Ansicht muss die Einstellung selbst auswerten, bevor sie einen Ton
+abspielt. Ebenso liest die Engine `settings.sens` und `settings.dpi` nie — die Umrechnung von
+Mausbewegung gehört in die Eingabeschicht, die Engine bekommt fertige Winkel über `applyMouse`.
