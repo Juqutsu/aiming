@@ -8,7 +8,7 @@ export const PEEK_COVER = { z: 6, x1: -14, x2: 1.2, h: 3.4 }
 /** Sekunden Sichtkontakt, bis der Gegner zurückschießt. */
 export const PEEK_REACTION = 0.32
 /** Bis zu diesem Tempo gilt ein Schuss als aus dem Stand. Etwas milder als bei Counterstrafe. */
-const SHOOT_SPEED = 1.2
+const PEEK_SHOOT_SPEED = 1.2
 /** Pause nach einem Kill oder Tod, bevor der nächste Gegner steht. */
 const COOL_KILL = 1.1
 const COOL_DEATH = 1.2
@@ -45,7 +45,6 @@ export const peek: ModeDef = {
     g.data.seen = 0
     g.data.deaths = 0
     g.data.exposures = []
-    g.data.state = 'ready'
     g.data.cool = 0
     g.targets = [g.data.enemy]
   },
@@ -57,7 +56,6 @@ export const peek: ModeDef = {
       g.data.cool -= dt
       if (g.data.cool <= 0) {
         g.data.enemy.dead = false
-        g.data.state = 'ready'
         g.data.expo = 0
         g.data.seen = 0
       }
@@ -81,7 +79,7 @@ export const peek: ModeDef = {
 
     // In Deckung baut sich die Aufmerksamkeit des Gegners wieder ab.
     g.data.seen = Math.max(0, g.data.seen - dt * 2.5)
-    if (g.data.state === 'ready') g.data.expo = 0
+    g.data.expo = 0
   },
   fire(g) {
     if (g.data.cool > 0) return
@@ -90,7 +88,7 @@ export const peek: ModeDef = {
     const treffbar = !g.data.enemy.hidden && !g.data.enemy.dead
     const t = treffbar ? rayHitBest(g.player, g.camera.F, [g.data.enemy]) : null
 
-    if (t && sp <= SHOOT_SPEED) {
+    if (t && sp <= PEEK_SHOOT_SPEED) {
       g.hits++
       g.score++
       g.streak++

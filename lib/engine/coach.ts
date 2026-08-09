@@ -1,4 +1,5 @@
 import { avg, pcNum } from './format'
+import { SHOOT_SPEED } from './modes/counterstrafe'
 import type { GameState } from './types'
 
 /**
@@ -25,7 +26,9 @@ export function coachLine(g: GameState): string {
 
   if (g.mode.id === 'counterstrafe') {
     const speeds: number[] = g.data.speeds ?? []
-    const clean = speeds.length ? speeds.filter((s) => s <= 1).length / speeds.length : 0
+    const clean = speeds.length
+      ? speeds.filter((s) => s <= SHOOT_SPEED).length / speeds.length
+      : 0
     if (clean < 0.7) {
       return `Nur ${Math.round(clean * 100)} % deiner Schüsse kamen im Stand. Das ist die teuerste Lücke im Spiel — tippe die Gegenrichtung kurz an, statt die Taste nur loszulassen.`
     }

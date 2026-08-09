@@ -57,6 +57,9 @@ export const counterstrafe: ModeDef = {
     const t = rayHitBest(g.player, g.camera.F, g.targets)
     if (t && sp <= SHOOT_SPEED) {
       const rt = (g.t - g.data.at) * 1000
+      // Bewusst nicht registerHit: das verwirft Zeiten ueber vier Sekunden.
+      // Gemessen wird hier die Spanne vom Signal bis zum Schuss, und die darf
+      // beliebig lang werden — das Ziel bleibt stehen, bis geschossen wird.
       g.ttk.push(rt)
       g.hits++
       g.score++

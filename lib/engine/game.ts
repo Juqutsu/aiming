@@ -14,6 +14,21 @@ export const DEFAULT_SETTINGS: Settings = {
 /** Über dieser Zeit stammt ein Treffer aus einem verschleppten Ziel und verzerrt den Schnitt. */
 const MAX_TTK_MS = 4000
 
+/**
+ * Groesster Simulationsschritt, den die Engine als sinnvoll ansieht — genau
+ * der Deckel, den das Original in seiner Bildschleife gesetzt hat
+ * (`Math.min(0.05, (now-last)/1000)`).
+ *
+ * Der Aufrufer muss ihn anwenden. Ohne Deckel degradieren nach einem
+ * Frame-Aussetzer still: Bewegungsintegration, der Counterstrafe-Stopp, das
+ * 320-ms-Fenster in Peek und der Feuertakt in Spray.
+ *
+ * Ein Deckel in `tick` selbst waere robuster, kollidiert aber mit fuenf
+ * bestehenden Tests in game.test.ts, die `tick` gross dimensionierte
+ * Zeitspruenge geben und die unveraenderte Weitergabe von `dt` zusichern.
+ */
+export const MAX_DT = 0.05
+
 export function createGame(
   mode: ModeDef,
   settings: Settings,
@@ -50,7 +65,11 @@ export function createGame(
   return g
 }
 
-/** Ein Simulationsschritt. Nach dem Rundenende wirkungslos. */
+/**
+ * Ein Simulationsschritt. Nach dem Rundenende wirkungslos.
+ *
+ * `dt` in Sekunden. Die Bildschleife muss ihn auf `MAX_DT` klemmen.
+ */
 export function tick(g: GameState, input: Input, dt: number): void {
   if (g.over) return
   g.t += dt

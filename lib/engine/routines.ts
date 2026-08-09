@@ -25,7 +25,7 @@ export const ROUTINES: Record<RoutineId, Routine> = {
   },
   full: {
     id: 'full',
-    name: 'Voller Durchlauf · 10 min',
+    name: 'Voller Durchlauf · 11 min',
     desc: 'Jeder Modus einmal. Gut für einen Standortcheck alle paar Wochen.',
     steps: [
       ['reaction', 40], ['gridshot', 60], ['flick', 60], ['micro', 60], ['switching', 60],

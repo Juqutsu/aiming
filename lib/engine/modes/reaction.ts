@@ -44,7 +44,9 @@ export const reaction: ModeDef = {
     const t = rayHitBest(g.player, g.camera.F, g.targets)
     if (t) {
       const rt = (g.t - g.data.at) * 1000
-      g.react.push(rt)
+      // Nur echte Messungen: ein Schuss im selben Frame wie das Erscheinen
+      // ergaebe 0 ms und damit einen unschlagbaren Bestwert.
+      if (rt > 0) g.react.push(rt)
       g.hits++
       g.streak++
       g.bestStreak = Math.max(g.bestStreak, g.streak)

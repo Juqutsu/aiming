@@ -1,5 +1,5 @@
 import { avg, ms, pc } from '../format'
-import { registerHit, registerMiss } from '../game'
+import { play, pushFx, registerMiss } from '../game'
 import { rayHitBest, speed } from '../math'
 import { slotTarget } from '../spawn'
 import type { GameState, ModeDef, Target } from '../types'
@@ -30,7 +30,15 @@ export const strafeshoot: ModeDef = {
     g.data.speeds.push(sp)
     const t = rayHitBest(g.player, g.camera.F, g.targets)
     if (t && sp <= SHOOT_SPEED) {
-      registerHit(g, t)
+      // Bewusst nicht registerHit: das verwirft Zeiten ueber vier Sekunden.
+      // Hier ueberlebt das Ziel jeden Fehlschuss und bleibt stehen — lange
+      // Standzeiten sind normale Messwerte, keine verschleppten Artefakte.
+      g.hits++
+      g.streak++
+      g.bestStreak = Math.max(g.bestStreak, g.streak)
+      g.ttk.push((g.t - t.born) * 1000)
+      pushFx(g, { x: t.x, y: t.y, z: t.z }, '+1', 'good')
+      play(g, 'hit')
       g.score++
       g.targets = [mk(g)]
     } else if (t) {
