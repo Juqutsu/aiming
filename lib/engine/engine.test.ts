@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { basis } from './camera'
 import { coachLine } from './coach'
 import { DEFAULT_SETTINGS, createGame, fire, tick } from './game'
+import { speed } from './math'
 import { MODES, MODE_LIST } from './modes'
 import { ROUTINES } from './routines'
-import type { GameState, Input, ModeDef } from './types'
+import type { GameState, Input, ModeDef, ModeId } from './types'
 
 /** Deterministischer Zufall, damit ein Fehlschlag reproduzierbar bleibt. */
 function seeded(seed: number) {
@@ -14,6 +16,29 @@ function seeded(seed: number) {
   }
 }
 
+/**
+ * Richtet die Kamera auf das erste lebende Ziel.
+ *
+ * Ohne das bleibt die Simulation bei yaw = 0, pitch = 0 stehen — Modi, die
+ * Ziele relativ zur Blickrichtung setzen, verfehlen dann jeden Schuss, und
+ * die Gesamtsimulation testet nur noch den Leerlaufpfad. Wird diese Funktion
+ * vor `tick` aufgerufen, holt deren eigener `basis()`-Aufruf die Änderung
+ * automatisch nach. Nach `tick` gibt es diesen Nachlauf nicht mehr — dann
+ * muss `basis()` hier selbst laufen, sonst zeigt `camera.F` (das `fire`
+ * tatsächlich für den Treffertest benutzt) noch auf die alte Richtung, obwohl
+ * yaw/pitch schon stimmen.
+ */
+function aimAtTarget(g: GameState) {
+  const t = g.targets.find((x) => !x.dead && !x.hidden)
+  if (!t) return
+  const dx = t.x - g.player.x
+  const dy = t.y - g.player.y
+  const dz = t.z - g.player.z
+  g.camera.yaw = Math.atan2(dx, dz)
+  g.camera.pitch = Math.atan2(dy, Math.hypot(dx, dz))
+  basis(g.camera)
+}
+
 /** Spielt eine volle Runde mit wechselnder Eingabe durch. */
 function playthrough(mode: ModeDef): GameState {
   const rng = seeded(7)
@@ -21,18 +46,44 @@ function playthrough(mode: ModeDef): GameState {
   const step = 1 / 120
   let frame = 0
   while (!g.over) {
+    // Halbzyklus von 2 s (480 Frames bei 1/120 s Schrittweite): counterstrafe
+    // braucht > 0,25 s Halten über 4,5 m/s plus Beschleunigungsrampe, bevor
+    // die Schussphase erreicht wird. peek muss weit genug laufen, um die
+    // Deckungskante bei etwa x > 3.09 zu überschreiten — das erfordert
+    // deutlich mehr als die zuvor angenommene knappe Sekunde.
     const input: Input = {
-      keys: { KeyA: frame % 60 < 30, KeyD: frame % 60 >= 30 },
+      keys: { KeyD: frame % 480 < 240, KeyA: frame % 480 >= 240 },
       mouseDown: frame % 20 < 10,
     }
+    aimAtTarget(g) // fuer Modi, die schon im tick auswerten (Tracking)
     tick(g, input, step)
-    if (frame % 15 === 0) fire(g)
+    aimAtTarget(g) // fuer Modi, deren Ziel erst im tick entsteht (Reaktion)
+    // Nur schießen, wenn ein Ziel da ist und man steht — genau die
+    // Stand-Disziplin, die Counterstrafe, Peek und Strafe & Shoot ohnehin
+    // verlangen. Ein Schuss ins Leere ist in keinem Modus realistisch.
+    const zielDa = g.targets.some((t) => !t.dead && !t.hidden)
+    if (zielDa && speed(g.player) <= 1.0) fire(g)
     // Die Ansicht leert diese Listen jeden Frame — hier wird das nachgestellt.
     g.fx.length = 0
     g.sounds.length = 0
     frame++
   }
   return g
+}
+
+/** Modus-eigenes Mindestmaß an Aktivität, das die Simulation belegen muss. */
+const AKTIVITAET: Record<ModeId, (g: GameState) => number> = {
+  gridshot: (g) => g.hits,
+  flick: (g) => g.hits,
+  micro: (g) => g.hits,
+  switching: (g) => g.hits,
+  strafeshoot: (g) => g.hits,
+  reaction: (g) => g.hits,
+  tracking: (g) => g.trackTime,
+  strafetrack: (g) => g.trackTime,
+  spray: (g) => g.data.sprays.length,
+  counterstrafe: (g) => g.data.speeds.length,
+  peek: (g) => g.data.deaths + g.score,
 }
 
 describe('MODES', () => {
@@ -96,6 +147,11 @@ describe('Gesamtsimulation', () => {
       expect(line.length).toBeGreaterThan(20)
       expect(line).not.toContain('NaN')
       expect(line).not.toContain('undefined')
+    })
+
+    it(`spielt ${mode.name} nicht als leere Huelle durch`, () => {
+      const g = playthrough(mode)
+      expect(AKTIVITAET[mode.id](g)).toBeGreaterThan(0)
     })
   }
 })
