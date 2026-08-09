@@ -79,28 +79,32 @@ export const spray: ModeDef = {
       return
     }
 
+    // Restzeit wird aufgebraucht und je Schuss wieder aufgefüllt statt absolut
+    // gesetzt: nur so bleibt die reale Feuerrate bei jeder Schrittweite rps.
+    // Ein Tick darf deshalb mehrere Schüsse abgeben.
     g.data.next -= dt
-    if (g.data.next > 0) return
-    g.data.next = 1 / w.rps
+    while (g.data.next <= 0 && input.mouseDown && g.data.ammo > 0) {
+      g.data.next += 1 / w.rps
 
-    const p = w.pat[Math.min(Math.floor(g.data.idx), w.pat.length - 1)]
-    const jx = (g.rng() - 0.5) * JITTER_DEG
-    const jy = (g.rng() - 0.5) * JITTER_DEG
-    const d = dirFrom(g.camera.yaw + (p[0] + jx) * DEG, g.camera.pitch + (p[1] + jy) * DEG)
-    const tt = (SPRAY_WALL_Z - g.player.z) / d.z
-    if (tt > 0) {
-      const ix = g.player.x + d.x * tt
-      const iy = g.player.y + d.y * tt
-      const dist = Math.hypot(ix - SPRAY_AIM.x, iy - SPRAY_AIM.y)
-      g.holes.push({ x: ix, y: iy, d: dist })
-      g.data.cur.push(dist)
-      if (g.holes.length > MAX_HOLES) g.holes.shift()
+      const p = w.pat[Math.min(Math.floor(g.data.idx), w.pat.length - 1)]
+      const jx = (g.rng() - 0.5) * JITTER_DEG
+      const jy = (g.rng() - 0.5) * JITTER_DEG
+      const d = dirFrom(g.camera.yaw + (p[0] + jx) * DEG, g.camera.pitch + (p[1] + jy) * DEG)
+      const tt = (SPRAY_WALL_Z - g.player.z) / d.z
+      if (tt > 0) {
+        const ix = g.player.x + d.x * tt
+        const iy = g.player.y + d.y * tt
+        const dist = Math.hypot(ix - SPRAY_AIM.x, iy - SPRAY_AIM.y)
+        g.holes.push({ x: ix, y: iy, d: dist })
+        g.data.cur.push(dist)
+        if (g.holes.length > MAX_HOLES) g.holes.shift()
+      }
+      g.data.idx++
+      g.data.ammo--
+      g.shots++
+      play(g, 'shot')
+      if (g.data.ammo <= 0) finish(g)
     }
-    g.data.idx++
-    g.data.ammo--
-    g.shots++
-    play(g, 'shot')
-    if (g.data.ammo <= 0) finish(g)
   },
   reload(g) {
     g.data.ammo = WEAPONS[g.settings.weapon].mag
