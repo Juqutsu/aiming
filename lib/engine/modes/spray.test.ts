@@ -1,18 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_SETTINGS, createGame, tick } from '../game'
+import { DEG } from '../math'
 import { WEAPONS } from '../weapons'
-import type { GameState, Input } from '../types'
+import type { GameState, Input, WeaponId } from '../types'
 import { SPRAY_AIM, SPRAY_RADIUS, SPRAY_WALL_Z, grouping, spray } from './spray'
 
 const holding: Input = { keys: {}, mouseDown: true }
 const idle: Input = { keys: {}, mouseDown: false }
 
-const start = (): GameState => createGame(spray, DEFAULT_SETTINGS, 60, () => 0.5)
+const start = (weapon: WeaponId = 'vandal'): GameState =>
+  createGame(spray, { ...DEFAULT_SETTINGS, weapon }, 60, () => 0.5)
 
 /** Simuliert `seconds` in Schritten von 10 ms. */
 function run(g: GameState, input: Input, seconds: number) {
   const step = 0.01
   for (let t = 0; t < seconds; t += step) tick(g, input, step)
+}
+
+/** Feuert bis das Magazin leer ist. Liefert Schusszahl und verbrauchte Zeit. */
+function emptyMagazine(weapon: WeaponId, step: number) {
+  const g = start(weapon)
+  while (g.data.ammo > 0 && g.t < 20) tick(g, holding, step)
+  return { shots: g.shots, holes: g.holes.length, time: g.t }
 }
 
 describe('grouping', () => {
@@ -50,12 +59,32 @@ describe('spray', () => {
     expect(g.shots).toBe(0)
   })
 
-  it('leert das Magazin in der erwarteten Zeit', () => {
-    const g = start()
-    const w = WEAPONS.vandal
-    run(g, holding, w.mag / w.rps + 0.2)
-    expect(g.shots).toBe(w.mag)
-    expect(g.holes).toHaveLength(w.mag)
+  // Zwei deutlich verschiedene Schrittweiten: mit absolut gesetzter Restzeit
+  // haengt die Feuerrate an der Bildrate und die grobe Schrittweite braucht
+  // sichtbar laenger fuer dasselbe Magazin.
+  describe.each([1 / 30, 1 / 240])('bei Schrittweite %f s', (step) => {
+    it('leert das Magazin mit genau mag Schuessen', () => {
+      const { shots, holes } = emptyMagazine('vandal', step)
+      expect(shots).toBe(WEAPONS.vandal.mag)
+      expect(holes).toBe(WEAPONS.vandal.mag)
+    })
+
+    it('leert das Magazin in der erwarteten Zeit', () => {
+      const w = WEAPONS.vandal
+      const soll = w.mag / w.rps
+      const { time } = emptyMagazine('vandal', step)
+      // Der letzte Schuss faellt genau eine Schussdauer vor dem nominellen
+      // Magazinende — mehr darf die Abweichung bei keiner Schrittweite werden.
+      expect(time).toBeGreaterThan(soll - 1 / w.rps)
+      expect(time).toBeLessThanOrEqual(soll)
+    })
+  })
+
+  it('braucht fuer ein Magazin bei grober wie feiner Schrittweite dieselbe Zeit', () => {
+    const grob = emptyMagazine('vandal', 1 / 30)
+    const fein = emptyMagazine('vandal', 1 / 240)
+    expect(grob.shots).toBe(fein.shots)
+    expect(grob.time).toBeCloseTo(fein.time, 1)
   })
 
   it('wertet nach dem letzten Schuss ein Magazin aus', () => {
@@ -107,6 +136,40 @@ describe('spray', () => {
     expect(idxNachFeuern).toBeGreaterThan(0)
     run(g, idle, 1)
     expect(g.data.idx).toBe(0)
+  })
+
+  // Der einzige Pfad in der Engine mit echter Projektionsmathematik. Gleicht
+  // die Kamera das Muster exakt aus, muss jeder Einschlag auf dem Zielpunkt
+  // liegen — ein Vorzeichenfehler im vertikalen Musterterm faellt hier sofort
+  // auf, weil er den Versatz verdoppelt statt ihn aufzuheben.
+  describe.each<WeaponId>(['vandal', 'phantom'])('bei perfektem Ausgleich mit %s', (weapon) => {
+    /** Feuert ein volles Magazin und richtet vor jedem Schuss gegen das Muster aus. */
+    function perfectSpray(): GameState {
+      const g = start(weapon)
+      const w = WEAPONS[weapon]
+      // Winkel vom Auge auf den Zielpunkt der Wand.
+      const zielPitch = Math.atan2(SPRAY_AIM.y - g.player.y, SPRAY_WALL_Z - g.player.z)
+      // 10 ms liegt sicher unter einer Schussdauer: hoechstens ein Schuss je Tick.
+      while (g.data.ammo > 0 && g.t < 20) {
+        const p = w.pat[Math.min(Math.floor(g.data.idx), w.pat.length - 1)]
+        g.camera.yaw = -p[0] * DEG
+        g.camera.pitch = zielPitch - p[1] * DEG
+        tick(g, holding, 0.01)
+      }
+      return g
+    }
+
+    it('legt jeden Einschlag auf den Zielpunkt', () => {
+      const g = perfectSpray()
+      expect(g.holes).toHaveLength(WEAPONS[weapon].mag)
+      expect(Math.max(...g.holes.map((h) => h.d))).toBeLessThan(0.01)
+    })
+
+    it('wertet das Magazin mit hundert Prozent Gruppierung', () => {
+      const g = perfectSpray()
+      expect(g.data.sprays).toHaveLength(1)
+      expect(g.data.sprays[0].score).toBe(100)
+    })
   })
 
   it('mittelt den Score ueber alle Magazine', () => {

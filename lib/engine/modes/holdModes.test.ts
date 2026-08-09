@@ -103,6 +103,17 @@ describe('strafetrack', () => {
     trackFor(g, holding, 1, true)
     expect(g.trackTime).toBeGreaterThan(0.9)
   })
+
+  // Die Auswertung ist ein bewusstes Duplikat der aus Smooth Tracking. Bei
+  // Duplikaten ist Auseinanderlaufen das Risiko, also wird trackTotal hier
+  // direkt zugesichert und nicht nur ueber trackTime mitgemessen.
+  it('zaehlt Feuerzeit nur bei gedrueckter Taste', () => {
+    const g = start(strafetrack)
+    trackFor(g, idle, 0.5, false)
+    expect(g.trackTotal).toBe(0)
+    trackFor(g, holding, 0.5, false)
+    expect(g.trackTotal).toBeGreaterThan(0.4)
+  })
 })
 
 describe('reaction', () => {
@@ -150,6 +161,24 @@ describe('reaction', () => {
     g.t += 0.25
     fire(g)
     expect(g.react[0]).toBeCloseTo(250, 0)
+    expect(g.score).toBe(1)
+  })
+
+  // Ein Schuss im selben Frame wie das Erscheinen ergaebe 0 ms — in einem
+  // Modus, in dem kleiner besser ist, waere das ein unschlagbarer Bestwert.
+  it('verwirft eine Nullmessung, zaehlt den Treffer aber', () => {
+    const g = start(reaction)
+    g.data.wait = 0.01
+    tick(g, idle, 0.02)
+    g.targets[0].x = 0
+    g.targets[0].y = EYE
+    g.targets[0].z = 10
+    g.targets[0].r = 0.5
+    // Signalzeitpunkt auf jetzt: zwischen Erscheinen und Schuss liegt nichts.
+    g.data.at = g.t
+    fire(g)
+    expect(g.react).toHaveLength(0)
+    expect(g.hits).toBe(1)
     expect(g.score).toBe(1)
   })
 

@@ -93,6 +93,15 @@ describe('micro', () => {
     expect(g.fx[0].text).toBe('HS')
   })
 
+  it('zaehlt bei einem Treffer Punkt und Treffer hoch', () => {
+    const g = start(micro)
+    aimAt(g)
+    fire(g)
+    expect(g.score).toBe(1)
+    expect(g.hits).toBe(1)
+    expect(g.shots).toBe(1)
+  })
+
   it('wertet die Accuracy als Metrik', () => {
     const g = start(micro)
     g.hits = 3

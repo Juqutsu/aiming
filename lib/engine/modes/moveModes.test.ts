@@ -205,6 +205,20 @@ describe('strafeshoot', () => {
     expect(g.fx.at(-1)?.text).toBe('zu schnell')
   })
 
+  // Anders als registerHit wird hier ungefiltert gemessen: das Ziel ueberlebt
+  // jeden Fehlschuss und bleibt stehen, lange Standzeiten sind also normale
+  // Messwerte und keine verschleppten Artefakte.
+  it('nimmt auch eine Standzeit ueber vier Sekunden in die Messung auf', () => {
+    const g = start(strafeshoot)
+    const t = aimAt(g)
+    t.born = 0
+    g.t = 6
+    fire(g)
+    expect(g.hits).toBe(1)
+    expect(g.ttk).toHaveLength(1)
+    expect(g.ttk[0]).toBeCloseTo(6000, 6)
+  })
+
   it('zeigt die Stand-Quote im HUD', () => {
     const g = start(strafeshoot)
     g.data.speeds = [0.1, 0.2, 5.0, 0.3]

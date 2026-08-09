@@ -39,22 +39,55 @@ function aimAtTarget(g: GameState) {
   basis(g.camera)
 }
 
-/** Spielt eine volle Runde mit wechselnder Eingabe durch. */
-function playthrough(mode: ModeDef): GameState {
+/**
+ * Verzieht den Blick so weit, dass der Strahl das Ziel sicher verfehlt.
+ *
+ * Zwei Zielradien seitlich: unabhaengig von Entfernung und Zielgroesse liegt
+ * der Strahl damit ausserhalb der Kugel, ohne dabei so weit danebenzugehen,
+ * dass er zufaellig ein anderes Ziel erwischt.
+ */
+function aimBeside(g: GameState) {
+  const t = g.targets.find((x) => !x.dead && !x.hidden)
+  if (!t) return
+  const dist = Math.hypot(t.x - g.player.x, t.y - g.player.y, t.z - g.player.z)
+  g.camera.yaw += 2 * Math.atan2(t.r, dist)
+  basis(g.camera)
+}
+
+/**
+ * Spielt eine volle Runde mit wechselnder Eingabe durch.
+ *
+ * Mit `ungenau` zielt der simulierte Spieler jeden dritten Schuss bewusst
+ * daneben. Ohne das laeuft die Runde nur ueber den Erfolgspfad — registerMiss,
+ * der Punktabzug bei Flickshots und der Streak-Ruecksetzer kaemen nie dran.
+ */
+function simulate(mode: ModeDef, ungenau = false, dur = 10): { g: GameState; resets: number } {
   const rng = seeded(7)
-  const g = createGame(mode, DEFAULT_SETTINGS, 10, rng)
+  const g = createGame(mode, DEFAULT_SETTINGS, dur, rng)
   const step = 1 / 120
   let frame = 0
+  let resets = 0
+  let schuesse = 0
   while (!g.over) {
     // Halbzyklus von 2 s (480 Frames bei 1/120 s Schrittweite): counterstrafe
     // braucht > 0,25 s Halten über 4,5 m/s plus Beschleunigungsrampe, bevor
     // die Schussphase erreicht wird. peek muss weit genug laufen, um die
     // Deckungskante bei etwa x > 3.09 zu überschreiten — das erfordert
     // deutlich mehr als die zuvor angenommene knappe Sekunde.
-    const input: Input = {
-      keys: { KeyD: frame % 480 < 240, KeyA: frame % 480 >= 240 },
-      mouseDown: frame % 20 < 10,
-    }
+    // Der ungenaue Spieler laeuft in einem Viertakt von je 1 s: rechts, stehen,
+    // links, stehen. Ohne echte Standphasen kommt Peek gar nicht zum Schuss —
+    // der Gegner erwischt einen, bevor die Strafe-Bewegung ausgelaufen ist.
+    const takt = Math.floor(frame / 120) % 4
+    const input: Input = ungenau
+      ? { keys: { KeyD: takt === 0, KeyA: takt === 2 }, mouseDown: frame % 20 < 10 }
+      : {
+          keys: { KeyD: frame % 480 < 240, KeyA: frame % 480 >= 240 },
+          mouseDown: frame % 20 < 10,
+        }
+    // Ueber den ganzen Frame gemessen: in den meisten Modi kann nur ein
+    // Fehlschuss die Serie reissen, in Peek zusaetzlich der Gegner, der im
+    // tick zurueckschiesst — beides ist ein Ruecksetzer.
+    const streakVorher = g.streak
     aimAtTarget(g) // fuer Modi, die schon im tick auswerten (Tracking)
     tick(g, input, step)
     aimAtTarget(g) // fuer Modi, deren Ziel erst im tick entsteht (Reaktion)
@@ -62,14 +95,25 @@ function playthrough(mode: ModeDef): GameState {
     // Stand-Disziplin, die Counterstrafe, Peek und Strafe & Shoot ohnehin
     // verlangen. Ein Schuss ins Leere ist in keinem Modus realistisch.
     const zielDa = g.targets.some((t) => !t.dead && !t.hidden)
-    if (zielDa && speed(g.player) <= 1.0) fire(g)
+    if (zielDa && speed(g.player) <= 1.0) {
+      // Jeder dritte Schuss, nicht jeder dritte Frame: Modi wie Reaktion oder
+      // Peek kommen in zehn Sekunden nur ein paar Mal zum Schuss. Der Fehlschuss
+      // faellt bewusst ans Ende des Dreierblocks, damit er eine laufende Serie
+      // abreisst statt eine ohnehin leere.
+      if (ungenau && schuesse % 3 === 2) aimBeside(g)
+      schuesse++
+      fire(g)
+    }
+    if (g.streak < streakVorher) resets++
     // Die Ansicht leert diese Listen jeden Frame — hier wird das nachgestellt.
     g.fx.length = 0
     g.sounds.length = 0
     frame++
   }
-  return g
+  return { g, resets }
 }
+
+const playthrough = (mode: ModeDef): GameState => simulate(mode).g
 
 /** Modus-eigenes Mindestmaß an Aktivität, das die Simulation belegen muss. */
 const AKTIVITAET: Record<ModeId, (g: GameState) => number> = {
@@ -152,6 +196,45 @@ describe('Gesamtsimulation', () => {
     it(`spielt ${mode.name} nicht als leere Huelle durch`, () => {
       const g = playthrough(mode)
       expect(AKTIVITAET[mode.id](g)).toBeGreaterThan(0)
+    })
+  }
+})
+
+describe('Gesamtsimulation mit ungenauem Spieler', () => {
+  // Ohne fire() gibt es keinen Fehlschuss, den man zielen koennte: die beiden
+  // Tracking-Modi und Spray werten ueber gehaltene Taste aus und kennen weder
+  // registerMiss noch eine Serie. Sie bleiben hier aussen vor.
+  const MIT_SCHUSS = MODE_LIST.filter((m) => m.fire)
+  // Laengere Runde als bei der genauen Simulation: Counterstrafe und Peek
+  // kommen pro Zyklus nur einmal zum Schuss, unter 45 s reicht das nicht fuer
+  // eine Serie, die ein Fehlschuss ueberhaupt abreissen koennte.
+  const UNGENAU_DUR = 45
+
+  it('laesst genau die drei Halte-Modi aussen vor', () => {
+    const ohne = MODE_LIST.filter((m) => !m.fire).map((m) => m.id)
+    expect(ohne.sort()).toEqual(['spray', 'strafetrack', 'tracking'])
+  })
+
+  for (const mode of MIT_SCHUSS) {
+    it(`bucht bei ${mode.name} mehr Schuesse als Treffer`, () => {
+      const { g } = simulate(mode, true, UNGENAU_DUR)
+      expect(g.shots).toBeGreaterThan(0)
+      expect(g.shots).toBeGreaterThan(g.hits)
+    })
+
+    it(`setzt bei ${mode.name} die Serie mindestens einmal zurueck`, () => {
+      const { g, resets } = simulate(mode, true, UNGENAU_DUR)
+      expect(resets).toBeGreaterThan(0)
+      expect(g.bestStreak).toBeGreaterThanOrEqual(g.streak)
+    })
+
+    it(`spielt ${mode.name} auch ungenau ohne Fehler durch`, () => {
+      const { g } = simulate(mode, true, UNGENAU_DUR)
+      expect(g.over).toBe(true)
+      expect(Number.isFinite(mode.metric(g))).toBe(true)
+      for (const [, value] of mode.stats(g)) {
+        expect(String(value)).not.toContain('NaN')
+      }
     })
   }
 })
