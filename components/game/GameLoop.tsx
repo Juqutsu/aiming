@@ -1,10 +1,15 @@
 'use client'
 
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useRef, type RefObject } from 'react'
+import { useLayoutEffect, useRef, type RefObject } from 'react'
+import { Vector3 } from 'three'
+import type { FxHandle } from '@/components/hud/FxLayer'
+import type { HudHandle } from '@/components/hud/Hud'
 import { MAX_DT, tick } from '@/lib/engine/game'
+import { speed } from '@/lib/engine/math'
 import type { GameState, Input } from '@/lib/engine/types'
 import { camEuler } from '@/lib/view/coords'
+import { snapshot } from '@/lib/view/hud'
 import { playQueue } from '@/lib/view/sfx'
 
 export type GameLoopProps = {
@@ -12,6 +17,8 @@ export type GameLoopProps = {
   inputRef: RefObject<Input | null>
   /** True, solange nicht simuliert werden darf: vor dem Start, in der Pause, nach dem Lauf. */
   frozenRef: RefObject<boolean>
+  hudRef: RefObject<HudHandle | null>
+  fxRef: RefObject<FxHandle | null>
   onOver: () => void
 }
 
@@ -22,11 +29,16 @@ export type GameLoopProps = {
  * Priorität in der Reihenfolge ihrer Montage auf, und alle anderen Komponenten
  * lesen den Zustand, den diese Schleife gerade geschrieben hat.
  */
-export function GameLoop({ gameRef, inputRef, frozenRef, onOver }: GameLoopProps) {
+export function GameLoop({ gameRef, inputRef, frozenRef, hudRef, fxRef, onOver }: GameLoopProps) {
   const camera = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
   const reported = useRef(false)
+  const sinceSnap = useRef(0)
+  const projected = useRef(new Vector3())
 
-  useEffect(() => {
+  // R3F startet seine Bildschleife bereits in der Layout-Phase; ein passives
+  // useEffect könnte erst nach dem ersten Frame committen.
+  useLayoutEffect(() => {
     camera.rotation.order = 'YXZ'
   }, [camera])
 
@@ -56,6 +68,44 @@ export function GameLoop({ gameRef, inputRef, frozenRef, onOver }: GameLoopProps
     if (g.over && !reported.current) {
       reported.current = true
       onOver()
+    }
+
+    // Effekte erst nach dem Kamera-Update projizieren, sonst hängen sie einen Frame nach.
+    if (g.fx.length) {
+      const fx = fxRef.current
+      for (const f of g.fx) {
+        if (!fx) continue
+        if (f.at === 'center') {
+          fx.spawn(f.text, f.kind, size.width / 2, size.height * 0.35)
+          continue
+        }
+        const v = projected.current.set(f.at.x, f.at.y, -f.at.z).project(camera)
+        // z über 1 heißt hinter der Kamera — dort gibt es keinen Bildpunkt.
+        if (v.z > 1) continue
+        fx.spawn(
+          f.text, f.kind,
+          (v.x * 0.5 + 0.5) * size.width,
+          (-v.y * 0.5 + 0.5) * size.height,
+        )
+      }
+      g.fx.length = 0
+    }
+
+    const hud = hudRef.current
+    if (hud) {
+      // Die Balken laufen mit voller Bildrate: bei Counterstrafe entscheidet
+      // ihre Latenz darüber, ob die Übung überhaupt funktioniert.
+      if (g.mode.meters) {
+        hud.setMeters(
+          speed(g.player),
+          g.mode.id === 'peek' ? (g.data.expo ?? 0) * 1000 : null,
+        )
+      }
+      sinceSnap.current += dt
+      if (sinceSnap.current >= 0.1) {
+        sinceSnap.current = 0
+        hud.set(snapshot(g))
+      }
     }
   })
 

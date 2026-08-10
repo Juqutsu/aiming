@@ -134,3 +134,17 @@ table.hist td.n{text-align:right;font-variant-numeric:tabular-nums}
 .webglfail{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
   text-align:center;padding:32px;z-index:40;background:var(--void)}
 .webglfail p{max-width:460px;color:var(--dim);line-height:1.6}
+
+/* Trefferfeedback: Ring und Text, 550 ms, danach entfernt der Aufrufer das Element. */
+#fxLayer{position:fixed;inset:0;pointer-events:none;z-index:11;overflow:hidden}
+.fx{position:absolute;transform:translate(-50%,-50%);font:700 17px ui-monospace,monospace;
+  white-space:nowrap;animation:fxText .55s linear forwards}
+.fx:before{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;
+  border:2px solid currentColor;border-radius:50%;animation:fxRing .55s linear forwards}
+.fx-good{color:var(--ok)}
+.fx-bad{color:var(--sig)}
+.fx-warn{color:var(--warn)}
+@keyframes fxText{from{opacity:1;transform:translate(-50%,-50%)}
+  to{opacity:0;transform:translate(-50%,calc(-50% - 48px))}}
+@keyframes fxRing{from{transform:scale(1);opacity:1}to{transform:scale(7);opacity:0}}
+@media (prefers-reduced-motion:reduce){.fx,.fx:before{animation-duration:.2s}}

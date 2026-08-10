@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from 'react'
 import { GameLoop } from './GameLoop'
 import { Range } from './Range'
 import { Targets } from './Targets'
+import { Crosshair } from '@/components/hud/Crosshair'
+import { FxLayer, type FxHandle } from '@/components/hud/FxLayer'
+import { Hud, type HudHandle } from '@/components/hud/Hud'
 import { createGame, DEFAULT_SETTINGS } from '@/lib/engine/game'
 import { MODES } from '@/lib/engine/modes'
 import { VFOV_DEG } from '@/lib/engine/sens'
@@ -21,6 +24,8 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const gameRef = useRef<GameState | null>(null)
   const inputRef = useRef<Input | null>(null)
   const frozenRef = useRef(true)
+  const hudRef = useRef<HudHandle | null>(null)
+  const fxRef = useRef<FxHandle | null>(null)
 
   // WebGL und Pointer Lock gibt es nur im Browser; vor der Montage wird nichts
   // gerendert, damit der Server keinen Zustand mit Zufallszahlen aufbaut.
@@ -66,6 +71,8 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           gameRef={gameRef}
           inputRef={inputRef}
           frozenRef={frozenRef}
+          hudRef={hudRef}
+          fxRef={fxRef}
           onOver={() => {
             setOver(true)
             document.exitPointerLock()
@@ -74,6 +81,9 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
         <Range cover={mode.id === 'peek'} />
         <Targets gameRef={gameRef} />
       </Canvas>
+      <Hud handleRef={hudRef} meters={!!mode.meters} />
+      <FxLayer handleRef={fxRef} />
+      <Crosshair />
     </div>
   )
 }
