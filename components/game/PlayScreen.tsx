@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { GameLoop } from './GameLoop'
 import { Range } from './Range'
+import { Targets } from './Targets'
 import { createGame, DEFAULT_SETTINGS } from '@/lib/engine/game'
 import { MODES } from '@/lib/engine/modes'
 import { VFOV_DEG } from '@/lib/engine/sens'
@@ -71,6 +72,7 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           }}
         />
         <Range cover={mode.id === 'peek'} />
+        <Targets gameRef={gameRef} />
       </Canvas>
     </div>
   )
