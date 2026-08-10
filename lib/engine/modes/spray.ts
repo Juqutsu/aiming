@@ -19,7 +19,7 @@ const RECOVERY_RATE = 14
 /** Zufällige Streuung pro Schuss in Grad — ohne sie wäre das Muster auswendig lernbar. */
 const JITTER_DEG = 0.30
 /** So viele Einschläge bleiben höchstens sichtbar. */
-const MAX_HOLES = 120
+export const MAX_HOLES = 120
 
 /** Anteil der Einschläge innerhalb des Kreises, in Prozent. */
 export function grouping(distances: number[]): number {

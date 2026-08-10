@@ -9,7 +9,10 @@ export function PauseOverlay({
   onQuit: () => void
 }) {
   return (
-    <div id="pause">
+    // Sonst sieht der `mousedown`-Listener des Hosts jeden Klick hier auch —
+    // "Abbrechen" würde dann noch schnell einen Pointer Lock auf einer Seite
+    // anfordern, die im selben Klick schon verlassen wird.
+    <div id="pause" onMouseDown={(e) => e.stopPropagation()}>
       <div className="box">
         <h2>{title}</h2>
         <p>{text}</p>

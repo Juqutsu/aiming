@@ -3,12 +3,10 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef, type RefObject } from 'react'
 import { Color, InstancedMesh, Object3D } from 'three'
-import { SPRAY_AIM, SPRAY_RADIUS, SPRAY_WALL_Z } from '@/lib/engine/modes/spray'
+import { MAX_HOLES, SPRAY_AIM, SPRAY_RADIUS, SPRAY_WALL_Z } from '@/lib/engine/modes/spray'
 import type { GameState } from '@/lib/engine/types'
 import { tz } from '@/lib/view/coords'
 
-/** Deckel aus `spray.ts`: mehr Einschläge hält die Engine nicht vor. */
-const MAX_HOLES = 120
 /** Radius eines Einschlags in Metern, wie im Original. */
 const HOLE_R = 0.035
 /** Einschläge und Ringe liegen knapp vor der Wand, sonst flimmern sie. */

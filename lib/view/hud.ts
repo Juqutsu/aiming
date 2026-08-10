@@ -51,7 +51,7 @@ export function speedColor(sp: number): string {
 }
 
 /** Der Exposure-Balken ist auf knapp das Dreifache des Todesfensters skaliert. */
-export const EXPO_SCALE_MS = 900
+const EXPO_SCALE_MS = 900
 /** Ab hier wird es unangenehm, auch wenn der Gegner noch nicht geschossen hat. */
 const EXPO_WARN_MS = 600
 

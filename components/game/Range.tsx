@@ -22,10 +22,17 @@ export function Range({ cover }: { cover?: boolean }) {
         <planeGeometry args={[140, 140]} />
         <meshStandardMaterial color="#0d151c" />
       </mesh>
-      {/* Raster im Zwei-Meter-Takt, genau wie das gezeichnete Raster des Originals. */}
-      <gridHelper args={[96, 48, '#607c96', '#607c96']} position={[0, 0.02, 0]}>
-        <lineBasicMaterial attach="material" color="#607c96" transparent opacity={0.18} />
-      </gridHelper>
+      {/* Raster im Zwei-Meter-Takt, genau wie das gezeichnete Raster des Originals.
+          Eigenschaften am vom Konstruktor erzeugten Material setzen statt es per
+          JSX-Kind zu ersetzen — sonst verwaist das Original und wird nie freigegeben. */}
+      <gridHelper
+        args={[96, 48, '#607c96', '#607c96']}
+        position={[0, 0.02, 0]}
+        onUpdate={(self) => {
+          self.material.transparent = true
+          self.material.opacity = 0.18
+        }}
+      />
 
       {/* Rückwand */}
       <mesh position={[0, WALL_H / 2, tz(WALL_Z)]}>

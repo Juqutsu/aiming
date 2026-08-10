@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { MODE_LIST } from '@/lib/engine/modes'
-import { cm360, edpi } from '@/lib/engine/sens'
+import { cm360, edpi, HFOV_DEG } from '@/lib/engine/sens'
 import { DEFAULT_SETTINGS } from '@/lib/engine/game'
 import type { ModeDef } from '@/lib/engine/types'
 
@@ -22,7 +22,7 @@ export default function Home() {
           </div>
           <div className="sensbadge">
             Sens <b>{s.sens}</b> · <b>{s.dpi}</b> DPI · eDPI <b>{edpi(s.sens, s.dpi)}</b><br />
-            <b>{cm360(s.sens, s.dpi).toFixed(1)}</b> cm/360 · FOV 103 (Hor+)
+            <b>{cm360(s.sens, s.dpi).toFixed(1)}</b> cm/360 · FOV {HFOV_DEG} (Hor+)
           </div>
         </header>
 
