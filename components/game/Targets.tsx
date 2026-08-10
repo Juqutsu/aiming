@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { MeshStandardMaterial, SphereGeometry, type Mesh } from 'three'
 import type { GameState } from '@/lib/engine/types'
+import { toThree } from '@/lib/view/coords'
 
 /** Target Switching stellt sechs Ziele auf, Gridshot drei — acht ist reichlich. */
 const POOL = 8
@@ -43,7 +44,7 @@ export function Targets({ gameRef }: { gameRef: RefObject<GameState | null> }) {
       const show = !!t && !t.dead && !t.hidden
       m.visible = show
       if (!show || !t) continue
-      m.position.set(t.x, t.y, -t.z)
+      m.position.set(...toThree(t))
       m.scale.setScalar(t.r)
     }
   })

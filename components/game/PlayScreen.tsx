@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { GameLoop } from './GameLoop'
 import { Range } from './Range'
 import { SprayWall } from './SprayWall'
@@ -22,6 +22,18 @@ import { resumeAudio } from '@/lib/view/sfx'
 /** Der Wert des Originals: nah genug, dass nichts vor der Nase verschwindet. */
 const NEAR = 0.06
 
+/** Client-Status ändert sich nach der Hydration nie wieder — es gibt nichts zu abonnieren. */
+const noopSubscribe = () => () => {}
+
+/** Einmal pro Seitenleben geprüft: WebGL-Unterstützung ändert sich nicht zur Laufzeit. */
+let webglCache: boolean | null = null
+function hasWebgl(): boolean {
+  if (webglCache === null) {
+    webglCache = !!document.createElement('canvas').getContext('webgl2')
+  }
+  return webglCache
+}
+
 export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const mode = MODES[modeId]
   const router = useRouter()
@@ -34,26 +46,35 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   // Merkt sich, ob in diesem Lauf schon gebunden wurde — unterscheidet
   // „Bereit“ (vor dem ersten Lock) von „Pausiert“ (danach).
   const startedRef = useRef(false)
+  // startedRef wird stets zusammen mit einem setState geschrieben (onLock, onAgain),
+  // das ohnehin neu rendert; der Lesewert ist zum Renderzeitpunkt also nie
+  // veralteter als der zuletzt committete.
+  // eslint-disable-next-line react-hooks/refs -- s.o.
   const started = startedRef.current
+  // Spiegelt `over` für Stellen, die keine frische React-Closure auf den State haben —
+  // der onLock-Rückruf unten wird nur bei mounted/mode/runId neu gebaut, nicht bei jedem
+  // `over`-Wechsel, würde also sonst einen veralteten Wert einfangen.
+  const overRef = useRef(false)
 
   // WebGL und Pointer Lock gibt es nur im Browser; vor der Montage wird nichts
   // gerendert, damit der Server keinen Zustand mit Zufallszahlen aufbaut.
-  const [mounted, setMounted] = useState(false)
-  const [webgl, setWebgl] = useState(true)
+  // useSyncExternalStore statt State+Effekt: der Client-Wert steht bei der
+  // Hydration bereits fest, ein setState im Effekt wäre nur eine unnötige
+  // zweite Rendrunde für denselben Übergang.
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false)
+  const webgl = useSyncExternalStore(noopSubscribe, hasWebgl, () => true)
   const [locked, setLocked] = useState(false)
   const [over, setOver] = useState(false)
-  /** Erzwingt eine frische Runde bei „Nochmal“: neuer Key, neuer Canvas. */
+  /** Erzwingt bei „Nochmal“ einen frischen `GameLoop`: neuer Key, neue Montage.
+   *  Canvas, Targets, SprayWall, Hud und FxLayer bleiben dieselbe Instanz —
+   *  nur die Bildschleife selbst startet neu. */
   const [runId, setRunId] = useState(0)
-
-  useEffect(() => {
-    setMounted(true)
-    setWebgl(!!document.createElement('canvas').getContext('webgl2'))
-  }, [])
 
   useEffect(() => {
     if (!mounted) return
     gameRef.current = createGame(mode, DEFAULT_SETTINGS)
     startedRef.current = false
+    overRef.current = false
     const host = hostRef.current
     if (!host) return
     const ctl = createInput({
@@ -62,6 +83,10 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
       frozen: () => frozenRef.current,
       onLock: (l) => {
         setLocked(l)
+        // Synchron, nicht per Render-Body: die Bildschleife und der Input-Host
+        // lesen frozenRef unabhängig vom React-Zyklus und müssen sofort den
+        // richtigen Wert sehen, nicht erst nach dem nächsten Commit.
+        frozenRef.current = !l || overRef.current
         if (l) {
           startedRef.current = true
           resumeAudio()
@@ -74,8 +99,6 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
       inputRef.current = null
     }
   }, [mounted, mode, runId])
-
-  frozenRef.current = !locked || over
 
   if (!mounted) return <div id="gameRoot" />
   if (!webgl) {
@@ -104,6 +127,8 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           hudRef={hudRef}
           fxRef={fxRef}
           onOver={() => {
+            overRef.current = true
+            frozenRef.current = true
             setOver(true)
             document.exitPointerLock()
           }}
@@ -115,14 +140,25 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
       <Hud handleRef={hudRef} meters={!!mode.meters} />
       <FxLayer handleRef={fxRef} />
       <Crosshair />
+      {/* gameRef ändert sich nicht mehr, sobald `over` steht: tick() läuft dann
+          nirgends mehr, der Lesezugriff hier ist sicher, auch wenn der Compiler
+          das nicht prüfen kann. */}
+      {/* eslint-disable-next-line react-hooks/refs -- s.o. */}
       {over && gameRef.current && (
         <Results
+          // eslint-disable-next-line react-hooks/refs -- derselbe sichere Zugriff wie oben
           game={gameRef.current}
           onAgain={() => {
-            // Muss hier stehen und nicht nur im Erzeugungs-Effekt: der Effekt
-            // laeuft erst nach dem Render, den dieser Klick ausloest, und ein
-            // Ref-Schreibzugriff loest selbst keinen weiteren Render aus.
+            // Synchron und vor den beiden set*-Aufrufen: R3F haengt useFrame
+            // schon in der Layout-Phase ein, gameRef.current wird aber erst im
+            // passiven Effekt neu besetzt. Landet ein Frame des frischen
+            // GameLoop (reported=false) in dieser Luecke, saehe es sonst noch
+            // das alte, bereits fertige Spiel (g.over) und meldete sofort
+            // wieder Ende — GameLoop und Targets brechen bei null sauber ab.
+            gameRef.current = null
             startedRef.current = false
+            overRef.current = false
+            frozenRef.current = true
             setOver(false)
             setRunId((n) => n + 1)
           }}
@@ -135,7 +171,12 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           text={started
             ? 'Klick, um weiterzumachen. Esc pausiert.'
             : 'Klick, um die Maus zu binden. Esc pausiert.'}
-          onResume={() => { void hostRef.current?.requestPointerLock() }}
+          onResume={() => {
+            // Host-Listener feuert für Overlay-Klicks nicht (siehe PauseOverlay),
+            // hier trotzdem denselben Schutz wie dort: eine abgelehnte
+            // Pointer-Lock-Anfrage darf nicht als unhandled rejection auffallen.
+            void hostRef.current?.requestPointerLock().catch(() => {})
+          }}
           onQuit={() => router.push('/')}
         />
       )}

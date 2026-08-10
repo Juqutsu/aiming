@@ -2,13 +2,12 @@
 
 import { useFrame, useThree } from '@react-three/fiber'
 import { useLayoutEffect, useRef, type RefObject } from 'react'
-import { Vector3 } from 'three'
 import type { FxHandle } from '@/components/hud/FxLayer'
 import type { HudHandle } from '@/components/hud/Hud'
 import { MAX_DT, tick } from '@/lib/engine/game'
 import { speed } from '@/lib/engine/math'
 import type { GameState, Input } from '@/lib/engine/types'
-import { camEuler } from '@/lib/view/coords'
+import { camEuler, project, toThree } from '@/lib/view/coords'
 import { snapshot } from '@/lib/view/hud'
 import { playQueue } from '@/lib/view/sfx'
 
@@ -25,20 +24,26 @@ export type GameLoopProps = {
 /**
  * Die einzige Stelle, an der der Spielzustand voranschreitet.
  *
- * Sie muss das erste Kind im Canvas sein: R3F ruft `useFrame`-Rückrufe gleicher
- * Priorität in der Reihenfolge ihrer Montage auf, und alle anderen Komponenten
- * lesen den Zustand, den diese Schleife gerade geschrieben hat.
+ * `useFrame` bekommt hier eine negative Priorität. R3F sortiert seine
+ * Rückrufe gleicher Priorität nach Montage-Reihenfolge, aber ein Neustart
+ * hängt nur `GameLoop` neu ein (siehe `key={runId}` in PlayScreen) — seine
+ * Subscription würde ab dem zweiten Lauf hinter `Targets` und `SprayWall`
+ * landen, die dann mit dem Zustand vom letzten Frame statt dem aktuellen
+ * zeichnen. Negative Priorität sortiert garantiert vor 0 und läuft dabei
+ * nicht in R3Fs manuellen Render-Modus, den erst Priorität > 0 auslöst.
  */
 export function GameLoop({ gameRef, inputRef, frozenRef, hudRef, fxRef, onOver }: GameLoopProps) {
   const camera = useThree((s) => s.camera)
   const size = useThree((s) => s.size)
   const reported = useRef(false)
   const sinceSnap = useRef(0)
-  const projected = useRef(new Vector3())
 
   // R3F startet seine Bildschleife bereits in der Layout-Phase; ein passives
   // useEffect könnte erst nach dem ersten Frame committen.
   useLayoutEffect(() => {
+    // R3F gibt hier absichtlich das mutierbare Three-Kamera-Objekt zurück;
+    // es zu mutieren ist der Zweck dieser Schleife, kein Compiler-Fehler.
+    // eslint-disable-next-line react-hooks/immutability -- s.o.
     camera.rotation.order = 'YXZ'
   }, [camera])
 
@@ -61,7 +66,7 @@ export function GameLoop({ gameRef, inputRef, frozenRef, hudRef, fxRef, onOver }
     }
 
     // Die Kamera folgt immer, auch in der Pause — sonst friert das Bild schief ein.
-    camera.position.set(g.player.x, g.player.y, -g.player.z)
+    camera.position.set(...toThree(g.player))
     const e = camEuler(g.camera.yaw, g.camera.pitch)
     camera.rotation.set(e[0], e[1], e[2])
 
@@ -79,14 +84,9 @@ export function GameLoop({ gameRef, inputRef, frozenRef, hudRef, fxRef, onOver }
           fx.spawn(f.text, f.kind, size.width / 2, size.height * 0.35)
           continue
         }
-        const v = projected.current.set(f.at.x, f.at.y, -f.at.z).project(camera)
-        // z über 1 heißt hinter der Kamera — dort gibt es keinen Bildpunkt.
-        if (v.z > 1) continue
-        fx.spawn(
-          f.text, f.kind,
-          (v.x * 0.5 + 0.5) * size.width,
-          (-v.y * 0.5 + 0.5) * size.height,
-        )
+        const p = project(f.at, camera, size.width, size.height)
+        if (!p) continue
+        fx.spawn(f.text, f.kind, p.x, p.y)
       }
       g.fx.length = 0
     }
@@ -104,10 +104,13 @@ export function GameLoop({ gameRef, inputRef, frozenRef, hudRef, fxRef, onOver }
       sinceSnap.current += dt
       if (sinceSnap.current >= 0.1) {
         sinceSnap.current = 0
-        hud.set(snapshot(g))
+        // Nur bei laufender Runde neu bilden: pausiert soll der Schnappschuss
+        // sofort stimmen, sobald es weitergeht — nach dem Ende gibt es dahinter
+        // aber nichts mehr zu sehen, das zehnmal pro Sekunde neu gezeichnet werden müsste.
+        if (!g.over) hud.set(snapshot(g))
       }
     }
-  })
+  }, -1)
 
   return null
 }
