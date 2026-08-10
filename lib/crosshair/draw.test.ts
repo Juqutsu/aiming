@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CROSSHAIR, drawCrosshair } from './draw'
 
-type Call = { op: string; args: number[] }
+type Call = { op: string; args: number[]; style?: string }
 
 /** Ein Aufzeichnungs-Kontext: er merkt sich nur, was gezeichnet wurde. */
 function fakeCtx() {
@@ -13,9 +13,11 @@ function fakeCtx() {
     beginPath: rec('beginPath'),
     moveTo: rec('moveTo'),
     lineTo: rec('lineTo'),
-    stroke: rec('stroke'),
     arc: rec('arc'),
-    fill: rec('fill'),
+    // stroke und fill halten den gerade gesetzten Stil fest — nur so ist die
+    // Reihenfolge Kontur-dann-Farbe ueberhaupt pruefbar.
+    stroke() { calls.push({ op: 'stroke', args: [], style: ctx.strokeStyle }) },
+    fill() { calls.push({ op: 'fill', args: [], style: ctx.fillStyle }) },
   }
   return ctx
 }
@@ -61,5 +63,16 @@ describe('drawCrosshair', () => {
 
   it('zeichnet ohne Punkt keinen Kreis', () => {
     expect(count(draw({ dot: false, outline: false }), 'arc')).toBe(0)
+  })
+
+  it('legt die Kontur unter die Farbe, nicht darüber', () => {
+    const ctx = draw({ outline: true, dot: true })
+    const styles = ctx.calls
+      .filter((c) => c.op === 'stroke' || c.op === 'fill')
+      .map((c) => c.style)
+    expect(styles).toEqual([
+      'rgba(0,0,0,.85)', 'rgba(0,0,0,.85)',
+      DEFAULT_CROSSHAIR.color, DEFAULT_CROSSHAIR.color,
+    ])
   })
 })
