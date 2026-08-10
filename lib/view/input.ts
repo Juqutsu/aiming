@@ -42,6 +42,12 @@ export function createInput(host: InputHost): { input: Input; dispose(): void } 
   const onKeyUp = (e: KeyboardEvent) => { input.keys[e.code] = false }
 
   const onMouseDown = (e: MouseEvent) => {
+    // Klicks auf Bedienelemente gehoeren dem Overlay, nicht dem Spiel. Dieser
+    // Listener haengt am Wurzelelement und feuert im Bubble-Pfad, bevor React
+    // ueberhaupt zustellt — ein Pointer Lock von hier raeumt den Schirm ab,
+    // und der Knopf sieht sein click-Ereignis nie. Genau daran ist
+    // "Abbrechen" gescheitert.
+    if ((e.target as Element | null)?.closest('button, a')) return
     if (!locked) {
       // Kann abgelehnt werden — dann bleibt der Pausen-Schirm einfach stehen.
       void Promise.resolve(host.el.requestPointerLock()).catch(() => {})
