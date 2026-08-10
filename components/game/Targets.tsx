@@ -1,8 +1,8 @@
 'use client'
 
 import { useFrame } from '@react-three/fiber'
-import { useRef, type RefObject } from 'react'
-import type { Mesh } from 'three'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { MeshStandardMaterial, SphereGeometry, type Mesh } from 'three'
 import type { GameState } from '@/lib/engine/types'
 
 /** Target Switching stellt sechs Ziele auf, Gridshot drei — acht ist reichlich. */
@@ -17,6 +17,21 @@ const POOL = 8
  */
 export function Targets({ gameRef }: { gameRef: RefObject<GameState | null> }) {
   const meshes = useRef<(Mesh | null)[]>([])
+
+  // Eine Geometrie und ein Material fuer alle acht Kugeln. R3F legt je
+  // JSX-Element eine eigene Instanz an — geteilt wird nur, was einmal hier
+  // entsteht und als Prop durchgereicht wird. Radius 1, die Groesse macht scale.
+  const geo = useMemo(() => new SphereGeometry(1, 28, 18), [])
+  const mat = useMemo(() => new MeshStandardMaterial({
+    color: '#ff4655',
+    emissive: '#ff4655',
+    emissiveIntensity: 0.55,
+    roughness: 0.35,
+    metalness: 0.05,
+  }), [])
+
+  // Selbst erzeugte Ressourcen raeumt R3F nicht ab.
+  useEffect(() => () => { geo.dispose(); mat.dispose() }, [geo, mat])
 
   useFrame(() => {
     const g = gameRef.current
@@ -39,17 +54,10 @@ export function Targets({ gameRef }: { gameRef: RefObject<GameState | null> }) {
         <mesh
           key={i}
           ref={(el) => { meshes.current[i] = el }}
+          geometry={geo}
+          material={mat}
           visible={false}
-        >
-          <sphereGeometry args={[1, 28, 18]} />
-          <meshStandardMaterial
-            color="#ff4655"
-            emissive="#ff4655"
-            emissiveIntensity={0.55}
-            roughness={0.35}
-            metalness={0.05}
-          />
-        </mesh>
+        />
       ))}
     </>
   )
