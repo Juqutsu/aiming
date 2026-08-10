@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { GameLoop } from './GameLoop'
 import { Range } from './Range'
+import { SprayWall } from './SprayWall'
 import { Targets } from './Targets'
 import { Crosshair } from '@/components/hud/Crosshair'
 import { FxLayer, type FxHandle } from '@/components/hud/FxLayer'
@@ -80,6 +81,7 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
         />
         <Range cover={mode.id === 'peek'} />
         <Targets gameRef={gameRef} />
+        {mode.id === 'spray' && <SprayWall gameRef={gameRef} />}
       </Canvas>
       <Hud handleRef={hudRef} meters={!!mode.meters} />
       <FxLayer handleRef={fxRef} />
