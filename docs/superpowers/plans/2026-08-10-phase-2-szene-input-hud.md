@@ -1936,7 +1936,14 @@ Nach dem Crosshair im Baum:
       {over && gameRef.current && (
         <Results
           game={gameRef.current}
-          onAgain={() => { setOver(false); setRunId((n) => n + 1) }}
+          onAgain={() => {
+            // Muss hier stehen und nicht nur im Erzeugungs-Effekt: der Effekt
+            // laeuft erst nach dem Render, den dieser Klick ausloest, und ein
+            // Ref-Schreibzugriff loest selbst keinen weiteren Render aus.
+            startedRef.current = false
+            setOver(false)
+            setRunId((n) => n + 1)
+          }}
           onMenu={() => router.push('/')}
         />
       )}
@@ -1959,7 +1966,7 @@ Dazu ein Ref, das sich merkt, ob überhaupt schon gespielt wurde:
   const started = startedRef.current
 ```
 
-und im `onLock`-Rückruf `if (l) startedRef.current = true`. Beim Wechsel von `runId` wird `startedRef.current = false` gesetzt — dieselbe Zeile in den Erzeugungs-Effekt.
+und im `onLock`-Rückruf `if (l) startedRef.current = true`. Der Erzeugungs-Effekt setzt `startedRef.current = false` für Montage und Moduswechsel; den Neustart über „Nochmal" deckt er **nicht** ab, weil er erst nach dem Render läuft, den der Klick auslöst — dort steht die Zeile deshalb noch einmal im Klick-Rückruf.
 
 Der `GameLoop` liest den Zustand über `gameRef`; der neue Lauf ersetzt schlicht dessen Inhalt. Der `reported`-Ref in `GameLoop` muss dabei zurückgesetzt werden — dafür bekommt der `<GameLoop>` ein `key={runId}`.
 
