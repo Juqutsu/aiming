@@ -118,7 +118,14 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
       {over && gameRef.current && (
         <Results
           game={gameRef.current}
-          onAgain={() => { setOver(false); setRunId((n) => n + 1) }}
+          onAgain={() => {
+            // Muss hier stehen und nicht nur im Erzeugungs-Effekt: der Effekt
+            // laeuft erst nach dem Render, den dieser Klick ausloest, und ein
+            // Ref-Schreibzugriff loest selbst keinen weiteren Render aus.
+            startedRef.current = false
+            setOver(false)
+            setRunId((n) => n + 1)
+          }}
           onMenu={() => router.push('/')}
         />
       )}
