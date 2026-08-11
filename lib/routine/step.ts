@@ -29,7 +29,12 @@ export function routineHref(routine: RoutineId, index = 0): string {
  * Der Modus-Abgleich ist der wichtige Fall: ohne ihn spielt jemand nach einem
  * Tippfehler in der Adresse den falschen Modus mit der Dauer eines anderen.
  */
-export function readStep(params: URLSearchParams, modeId: ModeId): RoutineStep | null {
+export function readStep(
+  // Nur `get` verlangt: so passt auch die schreibgeschützte Variante, die
+  // `useSearchParams()` liefert.
+  params: Pick<URLSearchParams, 'get'>,
+  modeId: ModeId,
+): RoutineStep | null {
   const id = params.get('routine')
   if (id === null || !(id in ROUTINES)) return null
   const routine = ROUTINES[id as RoutineId]

@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { GameLoop } from './GameLoop'
 import { Range } from './Range'
@@ -12,10 +12,12 @@ import { FxLayer, type FxHandle } from '@/components/hud/FxLayer'
 import { Hud, type HudHandle } from '@/components/hud/Hud'
 import { PauseOverlay } from '@/components/hud/PauseOverlay'
 import { Results } from '@/components/hud/Results'
-import { createGame, DEFAULT_SETTINGS } from '@/lib/engine/game'
+import { useSettings } from '@/components/settings/SettingsProvider'
+import { createGame } from '@/lib/engine/game'
 import { MODES } from '@/lib/engine/modes'
 import { VFOV_DEG } from '@/lib/engine/sens'
 import type { GameState, Input, ModeId } from '@/lib/engine/types'
+import { readStep } from '@/lib/routine/step'
 import { createInput } from '@/lib/view/input'
 import { resumeAudio } from '@/lib/view/sfx'
 
@@ -37,6 +39,8 @@ function hasWebgl(): boolean {
 export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const mode = MODES[modeId]
   const router = useRouter()
+  const { settings, ready } = useSettings()
+  const step = readStep(useSearchParams(), modeId)
   const hostRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<GameState | null>(null)
   const inputRef = useRef<Input | null>(null)
@@ -71,8 +75,10 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const [runId, setRunId] = useState(0)
 
   useEffect(() => {
-    if (!mounted) return
-    gameRef.current = createGame(mode, DEFAULT_SETTINGS)
+    // Erst wenn aus dem Speicher gelesen wurde: sonst startet die Runde mit
+    // den Standardwerten und ignoriert die gespeicherte Sensitivity.
+    if (!mounted || !ready) return
+    gameRef.current = createGame(mode, settings, step?.dur ?? settings.dur)
     startedRef.current = false
     overRef.current = false
     const host = hostRef.current
@@ -98,9 +104,14 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
       ctl.dispose()
       inputRef.current = null
     }
-  }, [mounted, mode, runId])
+    // Die Einstellungen werden beim Erzeugen des Spiels eingefroren und stehen
+    // deshalb **nicht** in der Abhängigkeitsliste: eine Änderung mitten im Lauf
+    // würde die Runde sonst neu starten. Dasselbe gilt für die Dauer aus dem
+    // Routinen-Schritt. Genauso verhielt sich das Original.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- s.o.
+  }, [mounted, ready, mode, runId])
 
-  if (!mounted) return <div id="gameRoot" />
+  if (!mounted || !ready) return <div id="gameRoot" />
   if (!webgl) {
     return (
       <div className="webglfail">

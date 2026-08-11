@@ -1,17 +1,20 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { DEFAULT_CROSSHAIR, drawCrosshair } from '@/lib/crosshair/draw'
+import { useSettings } from '@/components/settings/SettingsProvider'
+import { drawCrosshair } from '@/lib/crosshair/draw'
 
 /**
  * Ein eigenes kleines 2D-Canvas über dem 3D-Canvas.
  *
  * Es liegt bewusst nicht in der Szene: so bleibt es pixelscharf und unabhängig
  * von der Auflösungs-Skalierung des Renderers. Neu gezeichnet wird nur bei
- * Größenänderung — das Crosshair steht fest in der Bildmitte.
+ * Größenänderung und bei geänderter Konfiguration — das Crosshair steht fest
+ * in der Bildmitte.
  */
 export function Crosshair() {
   const ref = useRef<HTMLCanvasElement>(null)
+  const { crosshair } = useSettings()
 
   useEffect(() => {
     const cv = ref.current
@@ -28,12 +31,12 @@ export function Crosshair() {
       if (!c) return
       c.setTransform(dpr, 0, 0, dpr, 0, 0)
       c.clearRect(0, 0, w, h)
-      drawCrosshair(c, w / 2, h / 2, DEFAULT_CROSSHAIR)
+      drawCrosshair(c, w / 2, h / 2, crosshair)
     }
     paint()
     window.addEventListener('resize', paint)
     return () => window.removeEventListener('resize', paint)
-  }, [])
+  }, [crosshair])
 
   return <canvas id="xhair" ref={ref} />
 }
