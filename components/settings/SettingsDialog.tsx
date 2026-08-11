@@ -187,7 +187,7 @@ export function SettingsDialog({
           </TabsContent>
 
           <TabsContent value="crosshair">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div>
                 <Zeile label="Farbe">
                   <input

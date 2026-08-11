@@ -9,7 +9,11 @@
   --ok:#25e0b8;
   --warn:#ffb43a;
 }
-*{box-sizing:border-box;margin:0;padding:0}
+/* Der Reset gehört in Tailwinds base-Layer: ungelayertes CSS schlägt jede
+   Layer-Regel, sonst löscht dieses `*` alle Abstände der shadcn-Komponenten. */
+@layer base {
+  *{box-sizing:border-box;margin:0;padding:0}
+}
 html,body{height:100%;background:var(--void);color:var(--bone);
   font-family:var(--font-condensed),'Roboto Condensed','Arial Narrow',system-ui,sans-serif;
   overflow:hidden}
@@ -34,6 +38,13 @@ header.brand{display:flex;align-items:flex-end;justify-content:space-between;
 .tag{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:6px}
 .sensbadge{font-size:12px;letter-spacing:.1em;color:var(--dim);text-align:right;line-height:1.7}
 .sensbadge b{color:var(--bone)}
+/* Der Badge ist jetzt der Weg in die Einstellungen — als Knopf, aber unverändert im Aussehen. */
+.headtools{display:flex;align-items:center;gap:12px}
+button.sensbadge{background:none;border:0;padding:0;font:inherit;cursor:pointer}
+button.sensbadge:hover{color:var(--bone)}
+.gear{background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;
+  padding:9px;display:grid;place-items:center;transition:border-color .12s,color .12s}
+.gear:hover{border-color:var(--sig);color:var(--bone)}
 
 .eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--sig);
   display:flex;align-items:center;gap:10px;margin:30px 0 12px}
