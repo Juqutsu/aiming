@@ -1305,7 +1305,8 @@ export function BarRow({ label, fill, value, hint }: {
   hint: string
 }) {
   return (
-    <div className="bar">
+    // `.profbar`, nicht `.bar`: `.bar` gehört bereits den HUD-Balken (app/range.css:140).
+    <div className="profbar">
       <span>
         {label}
         <span className="vh"> — {hint}</span>
@@ -1351,17 +1352,18 @@ Direkt vor dem Block `/* ---------- Spielwurzel ---------- */` einfügen:
 .tip b{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:600}
 
 .bars{display:grid;gap:10px}
-.bar{display:grid;grid-template-columns:140px 1fr 64px;align-items:center;gap:12px;
+/* `.profbar`, nicht `.bar`: den Namen tragen schon die HUD-Balken weiter oben. */
+.profbar{display:grid;grid-template-columns:140px 1fr 64px;align-items:center;gap:12px;
   font-size:13px}
-.bar .track{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-.bar .fill{display:block;height:100%;border-radius:4px;background:var(--text)}
-.bar .val{text-align:right;color:var(--dim);
+.profbar .track{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.profbar .fill{display:block;height:100%;border-radius:4px;background:var(--text)}
+.profbar .val{text-align:right;color:var(--dim);
   font-family:var(--font-num);font-variant-numeric:tabular-nums}
 
 .empty{color:var(--dim);font-size:13px;line-height:1.6}
 
 @media (max-width:640px){
-  .bar{grid-template-columns:100px 1fr 56px;gap:8px}
+  .profbar{grid-template-columns:100px 1fr 56px;gap:8px}
 }
 ```
 
