@@ -3,6 +3,7 @@
 import { SlidersHorizontal, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import { Sparkline } from '@/components/charts/Sparkline'
 import { CrosshairMark } from '@/components/settings/CrosshairPreview'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { useSettings } from '@/components/settings/SettingsProvider'
@@ -11,6 +12,7 @@ import { ROUTINES, type RoutineId } from '@/lib/engine/routines'
 import { cm360, edpi } from '@/lib/engine/sens'
 import type { ModeDef } from '@/lib/engine/types'
 import { routineHref } from '@/lib/routine/step'
+import { bestIndex, trend } from '@/lib/stats/trend'
 
 const GROUPS: [ModeDef['cat'], string][] = [
   ['aim', 'Aim'],
@@ -24,7 +26,7 @@ function minuten(steps: readonly [string, number][]): number {
 }
 
 export default function MenuScreen() {
-  const { settings: s, crosshair, best, ready } = useSettings()
+  const { settings: s, crosshair, best, runs, ready } = useSettings()
   const [offen, setOffen] = useState(false)
 
   return (
@@ -82,6 +84,11 @@ export default function MenuScreen() {
             <div className="grid">
               {MODE_LIST.filter((m) => m.cat === cat).map((m) => {
                 const b = best[m.id]
+                // Nur vergleichbare Läufe: auf 96 Pixeln sieht man einem
+                // Ausschlag nicht an, ob er Fortschritt war oder eine
+                // verstellte Zielgröße.
+                const werte = trend(runs, m.id).filter((p) => p.standard).slice(-20)
+                const bi = bestIndex(werte, !!m.lowerBetter)
                 return (
                   <Link className="card" key={m.id} href={`/play/${m.id}`}>
                     {/* Nur wenn die Fertigkeit mehr sagt als die Gruppe darüber.
@@ -90,6 +97,13 @@ export default function MenuScreen() {
                     {m.skill !== title && <span className="skill">{m.skill}</span>}
                     <h3>{m.name}</h3>
                     <p>{m.desc}</p>
+                    <div className="spark">
+                      <Sparkline
+                        values={werte.map((p) => p.metric)}
+                        best={bi}
+                        label={`${m.name}: Trend der letzten ${werte.length} vergleichbaren Läufe`}
+                      />
+                    </div>
                     <div className="best">
                       <span>{m.metricName}</span>
                       {/* Vor dem ersten Lesen aus dem Speicher steht ein Strich:
