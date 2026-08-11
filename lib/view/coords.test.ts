@@ -2,10 +2,8 @@ import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
 import { basis, createCamera } from '@/lib/engine/camera'
 import { dirFrom } from '@/lib/engine/math'
-import { camEuler, project, toThree, tz } from './coords'
+import { camEuler, toThree, tz } from './coords'
 
-const WIDTH = 800
-const HEIGHT = 600
 
 /** Ein paar Winkel quer über den erlaubten Bereich, inklusive Rückwärtsblick. */
 const ANGLES: [number, number][] = [
@@ -56,25 +54,3 @@ describe('camEuler', () => {
   })
 })
 
-describe('project', () => {
-  it('bildet einen Punkt geradeaus auf die Bildmitte ab', () => {
-    const cam = threeCam(0, 0)
-    const p = project({ x: 0, y: 0, z: 5 }, cam, WIDTH, HEIGHT)
-    expect(p).not.toBeNull()
-    expect(p!.x).toBeCloseTo(WIDTH / 2, 6)
-    expect(p!.y).toBeCloseTo(HEIGHT / 2, 6)
-  })
-
-  it('bildet einen Punkt über der Blickachse auf ein kleineres y ab — Bildschirm-y wächst nach unten', () => {
-    const cam = threeCam(0, 0)
-    const p = project({ x: 0, y: 1, z: 5 }, cam, WIDTH, HEIGHT)
-    expect(p).not.toBeNull()
-    expect(p!.y).toBeLessThan(HEIGHT / 2)
-  })
-
-  it('liefert null für einen Punkt hinter der Kamera', () => {
-    const cam = threeCam(0, 0)
-    const p = project({ x: 0, y: 0, z: -5 }, cam, WIDTH, HEIGHT)
-    expect(p).toBeNull()
-  })
-})

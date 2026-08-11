@@ -18,8 +18,8 @@ const WALL_H = 6
 export function SprayWall({ gameRef }: { gameRef: RefObject<GameState | null> }) {
   const holes = useRef<InstancedMesh>(null)
   const dummy = useMemo(() => new Object3D(), [])
-  const inside = useMemo(() => new Color('#25e0b8'), [])
-  const outside = useMemo(() => new Color('#141a20'), [])
+  const inside = useMemo(() => new Color('#ff6b35'), [])
+  const outside = useMemo(() => new Color('#2a313c'), [])
 
   useFrame(() => {
     const g = gameRef.current
@@ -47,23 +47,23 @@ export function SprayWall({ gameRef }: { gameRef: RefObject<GameState | null> })
     <>
       <mesh position={[0, WALL_H / 2, tz(SPRAY_WALL_Z)]}>
         <planeGeometry args={[WALL_W, WALL_H]} />
-        <meshStandardMaterial color="#20303d" />
+        <meshStandardMaterial color="#161b22" />
       </mesh>
 
       {/* Der Kreis, innerhalb dessen ein Einschlag als sitzend zählt. */}
       <mesh position={[SPRAY_AIM.x, SPRAY_AIM.y, tz(SPRAY_WALL_Z) + EPS]}>
         <ringGeometry args={[SPRAY_RADIUS - 0.01, SPRAY_RADIUS, 64]} />
-        <meshBasicMaterial color="#25e0b8" transparent opacity={0.5} />
+        <meshBasicMaterial color="#ff6b35" transparent opacity={0.55} />
       </mesh>
       {/* Ein zweiter Ring zur Orientierung, ohne Wertung. */}
       <mesh position={[SPRAY_AIM.x, SPRAY_AIM.y, tz(SPRAY_WALL_Z) + EPS]}>
         <ringGeometry args={[SPRAY_RADIUS * 2 - 0.01, SPRAY_RADIUS * 2, 64]} />
-        <meshBasicMaterial color="#789bb0" transparent opacity={0.28} />
+        <meshBasicMaterial color="#4a5563" transparent opacity={0.35} />
       </mesh>
       {/* Der Zielpunkt selbst. */}
       <mesh position={[SPRAY_AIM.x, SPRAY_AIM.y, tz(SPRAY_WALL_Z) + EPS * 2]}>
         <circleGeometry args={[0.03, 16]} />
-        <meshBasicMaterial color="#ff4655" />
+        <meshBasicMaterial color="#e6e8ec" />
       </mesh>
 
       <instancedMesh ref={holes} args={[undefined, undefined, MAX_HOLES]}>

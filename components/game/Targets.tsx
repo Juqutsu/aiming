@@ -23,12 +23,15 @@ export function Targets({ gameRef }: { gameRef: RefObject<GameState | null> }) {
   // JSX-Element eine eigene Instanz an — geteilt wird nur, was einmal hier
   // entsteht und als Prop durchgereicht wird. Radius 1, die Groesse macht scale.
   const geo = useMemo(() => new SphereGeometry(1, 28, 18), [])
+  // Warmes Orange gegen eine durchweg kalte Range: das Ziel ist die einzige
+  // warme Farbe im Bild und dadurch ohne Suchen zu finden. Wenig Eigenleuchten,
+  // damit die Kugel eine lesbare Form behält statt zu einem Fleck zu verglühen.
   const mat = useMemo(() => new MeshStandardMaterial({
-    color: '#ff4655',
-    emissive: '#ff4655',
-    emissiveIntensity: 0.55,
-    roughness: 0.35,
-    metalness: 0.05,
+    color: '#ff6b35',
+    emissive: '#ff6b35',
+    emissiveIntensity: 0.25,
+    roughness: 0.5,
+    metalness: 0,
   }), [])
 
   // Selbst erzeugte Ressourcen raeumt R3F nicht ab.

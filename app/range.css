@@ -1,161 +1,205 @@
+/* RANGE — die Oberfläche.
+ *
+ * Ein einziger Akzent trägt alles, was Aufmerksamkeit verdient: die Ziele in
+ * der Szene, die primäre Aktion, der aktive Zustand. Alles andere ist kalt und
+ * neutral. Das ist keine Geschmacksfrage — in einem Aim-Trainer darf im Bild
+ * nur das leuchten, worauf geschossen wird.
+ */
 :root{
-  --void:#0b1116;
-  --steel:#141d26;
-  --steel-2:#1c2733;
-  --line:#2b3a49;
-  --bone:#e8e4dc;
-  --dim:#7d8fa1;
-  --sig:#ff4655;
-  --ok:#25e0b8;
-  --warn:#ffb43a;
+  --bg:#0e1116;
+  --surface:#171b22;
+  --raised:#1f242d;
+  --line:#262d38;
+  --text:#e6e8ec;
+  --dim:#868e9c;
+  --sig:#ff6b35;
+  --sig-ink:#0e1116;
+
+  /* Eine Rundung für Flächen, eine für Bedienelemente. Mehr nicht. */
+  --r:10px;
+  --r-sm:8px;
+
+  /* Zustandsfarben der Balken, referenziert aus lib/view/hud.ts:
+     --ok   im Zielbereich, bewusst neutral statt grün
+     --sig  außerhalb — dieselbe Farbe wie die Ziele, also „hierhin sehen“
+     --warn die Zwischenstufe der Exposure */
+  --ok:#cbd2dc;
+  --warn:#ffa03d;
+
+  --font-ui:var(--font-geist-sans),system-ui,sans-serif;
+  --font-num:var(--font-geist-mono),ui-monospace,monospace;
 }
+
 /* Der Reset gehört in Tailwinds base-Layer: ungelayertes CSS schlägt jede
    Layer-Regel, sonst löscht dieses `*` alle Abstände der shadcn-Komponenten. */
 @layer base {
   *{box-sizing:border-box;margin:0;padding:0}
 }
-html,body{height:100%;background:var(--void);color:var(--bone);
-  font-family:var(--font-condensed),'Roboto Condensed','Arial Narrow',system-ui,sans-serif;
-  overflow:hidden}
+
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-ui);overflow:hidden}
 body{-webkit-font-smoothing:antialiased}
-.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
 
-#game{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:none;background:var(--void)}
+/* Jede Zahl, überall: feste Zeichenbreiten, damit eine tickende Uhr die Zeile
+   nicht verschiebt. */
+.stat .v,.pill .v,.ammo .n,.sensbadge,table.hist td.n,.meter .k span:last-child{
+  font-family:var(--font-num);font-variant-numeric:tabular-nums}
 
-/* angled-corner device — the one flourish, used everywhere structural */
-.cut{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+.hidden{display:none!important}
 
-.screen{position:fixed;inset:0;overflow-y:auto;background:
-  radial-gradient(120% 80% at 50% -10%,#16222e 0%,var(--void) 60%);
-  padding:28px 24px 60px;z-index:20}
-.screen.hidden,.hidden{display:none!important}
-.wrap{max-width:1080px;margin:0 auto}
+/* ---------- Bildschirme ---------- */
 
-header.brand{display:flex;align-items:flex-end;justify-content:space-between;
-  border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:26px;gap:16px;flex-wrap:wrap}
-.logo{font-size:38px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;line-height:.95}
+.screen{position:fixed;inset:0;overflow-y:auto;background:var(--bg);
+  padding:32px 24px 72px;z-index:20}
+.wrap{max-width:1120px;margin:0 auto}
+
+header.brand{display:flex;align-items:center;justify-content:space-between;
+  gap:20px;flex-wrap:wrap;margin-bottom:36px}
+.logo{font-size:19px;font-weight:600;letter-spacing:.02em;line-height:1.2}
 .logo em{font-style:normal;color:var(--sig)}
-.tag{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-top:6px}
-.sensbadge{font-size:12px;letter-spacing:.1em;color:var(--dim);text-align:right;line-height:1.7}
-.sensbadge b{color:var(--bone)}
-/* Der Badge ist jetzt der Weg in die Einstellungen — als Knopf, aber unverändert im Aussehen. */
-.headtools{display:flex;align-items:center;gap:12px}
-button.sensbadge{background:none;border:0;padding:0;font:inherit;cursor:pointer}
-button.sensbadge:hover{color:var(--bone)}
+.tag{font-size:12px;color:var(--dim);margin-top:2px}
+.headtools{display:flex;align-items:center;gap:10px}
+
+/* Die Marke der Seite ist das eigene Crosshair des Spielers — kein Logo, das
+   für jedes Produkt taugen würde, sondern genau die Einstellung, mit der er
+   gleich schießt. */
+.mark{display:grid;place-items:center;width:38px;height:38px;flex:none;
+  border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+
+.sensbadge{font-family:var(--font-num);font-size:11.5px;line-height:1.7;
+  color:var(--dim);text-align:right}
+.sensbadge b{color:var(--text);font-weight:500}
+button.sensbadge{background:none;border:0;padding:8px 10px;cursor:pointer;
+  border-radius:var(--r-sm);transition:color .12s,background .12s}
+button.sensbadge:hover{background:var(--surface);color:var(--text)}
+
 .gear{background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;
-  padding:9px;display:grid;place-items:center;transition:border-color .12s,color .12s}
-.gear:hover{border-color:var(--sig);color:var(--bone)}
+  width:38px;height:38px;display:grid;place-items:center;border-radius:var(--r-sm);
+  transition:border-color .12s,color .12s,background .12s}
+.gear:hover{border-color:var(--raised);background:var(--surface);color:var(--text)}
 
-.eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--sig);
-  display:flex;align-items:center;gap:10px;margin:30px 0 12px}
+/* ---------- Gruppen und Karten ---------- */
+
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:12px;margin:32px 0 12px;font-weight:500}
 .eyebrow:after{content:"";flex:1;height:1px;background:var(--line)}
-.eyebrow span.note{color:var(--dim);letter-spacing:.12em}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:12px}
-.card{background:var(--steel);border:1px solid var(--line);padding:16px 16px 14px;
-  text-align:left;color:inherit;font:inherit;cursor:pointer;position:relative;
-  transition:background .12s,border-color .12s,transform .12s}
-.card:hover,.card:focus-visible{background:var(--steel-2);border-color:var(--sig);transform:translateY(-2px)}
-.card:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
-.card h3{font-size:19px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
-.card p{font-size:13.5px;color:var(--dim);line-height:1.45;margin-top:6px;min-height:58px}
-.card .best{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
-  border-top:1px solid var(--line);margin-top:10px;padding-top:8px;display:flex;justify-content:space-between}
-.card .best b{color:var(--ok);font-weight:600}
-.card .skill{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.16em;
-  color:var(--void);background:var(--dim);padding:2px 6px;text-transform:uppercase}
-.card .skill.core{background:var(--sig);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:10px}
 
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-button.btn{background:var(--sig);color:#fff;border:0;padding:12px 22px;font:inherit;font-size:14px;
-  letter-spacing:.16em;text-transform:uppercase;font-weight:700;cursor:pointer}
-button.btn:hover{filter:brightness(1.12)}
-button.btn.ghost{background:transparent;color:var(--bone);border:1px solid var(--line)}
-button.btn.ghost:hover{border-color:var(--bone);background:#0000}
-button.btn:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;text-align:left;color:inherit;font:inherit;cursor:pointer;
+  display:flex;flex-direction:column;
+  transition:background .12s,border-color .12s}
+.card:hover{background:var(--raised);border-color:#333c49}
+.card:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.card h3{font-size:15px;font-weight:600;letter-spacing:-.005em;order:2}
+.card p{font-size:13px;color:var(--dim);line-height:1.5;margin-top:6px;order:3}
+.card .skill{font-size:11px;color:var(--dim);order:1;margin-bottom:6px}
+/* Orange trägt genau eine Aussage: „hier anfangen“. Das gilt für die Routinen,
+   nicht für sechs von elf Modi — sonst heißt es nichts mehr. */
+.card .skill.core{color:var(--sig)}
+.card .best{font-size:12px;color:var(--dim);border-top:1px solid var(--line);
+  margin-top:16px;padding-top:10px;display:flex;justify-content:space-between;
+  align-items:baseline;gap:8px;order:4}
+.card .best b{color:var(--text);font-weight:500;font-family:var(--font-num);
+  font-variant-numeric:tabular-nums}
 
-/* settings */
-.panel{background:var(--steel);border:1px solid var(--line);padding:20px}
-.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px 20px}
-label.f{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.f-val{color:var(--ok)}
-input[type=range]{width:100%;accent-color:var(--sig);background:transparent}
-input[type=number],select{width:100%;background:var(--void);border:1px solid var(--line);color:var(--bone);
-  padding:8px 10px;font:inherit;font-size:14px}
-input[type=color]{width:100%;height:36px;background:var(--void);border:1px solid var(--line);padding:2px}
-.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--bone);cursor:pointer}
-.chk input{accent-color:var(--sig);width:16px;height:16px}
-.xhpreview{height:96px;background:#0e1a12;border:1px solid var(--line);position:relative;overflow:hidden}
+/* Der Beschreibungstext soll die Karten nicht auf Zeilenzahl-Zufall
+   unterschiedlich hoch machen; der Fuß sitzt immer unten. */
+.card p{flex:1}
 
-/* HUD */
+/* ---------- Knöpfe ---------- */
+
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+button.btn{background:var(--sig);color:var(--sig-ink);border:1px solid transparent;
+  padding:10px 18px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  border-radius:var(--r-sm);transition:background .12s,border-color .12s,color .12s}
+button.btn:hover{background:#ff8155}
+button.btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
+button.btn.ghost:hover{background:var(--surface);border-color:var(--raised)}
+button.btn:active{transform:translateY(1px)}
+button.btn:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+
+/* ---------- HUD ---------- */
+
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;font-size:13px}
-.hudTop{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;gap:2px;padding-top:10px}
-.pill{background:rgba(11,17,22,.82);border:1px solid var(--line);padding:6px 16px;text-align:center;min-width:92px}
-.pill .k{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
-.pill .v{font-size:22px;font-weight:700;line-height:1.05}
-.pill .v.sig{color:var(--sig)}
-.pill .v.ok{color:var(--ok)}
-.hudLeft{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:190px}
-.meter{margin-bottom:14px}
-.meter .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
-  display:flex;justify-content:space-between;margin-bottom:4px}
-.bar{height:10px;background:#0e161d;border:1px solid var(--line);position:relative;overflow:hidden}
-.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--sig);width:0%}
-.bar .zone{position:absolute;top:0;bottom:0;background:rgba(37,224,184,.22);border-right:1px solid var(--ok)}
-.hudBottom{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:var(--dim);
-  font-size:12px;letter-spacing:.14em;text-transform:uppercase}
-.cue{position:absolute;top:26%;left:0;right:0;text-align:center;font-size:44px;font-weight:700;
-  letter-spacing:.2em;text-transform:uppercase;text-shadow:0 2px 20px #000}
+
+/* Eine Leiste statt vier schwebender Kacheln: weniger Kanten im Blickfeld. */
+.hudTop{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;
+  background:rgba(14,17,22,.78);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;backdrop-filter:blur(8px)}
+.pill{padding:7px 18px 8px;text-align:center;min-width:96px}
+.pill+.pill{border-left:1px solid var(--line)}
+.pill .k{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.pill .v{font-size:20px;font-weight:500;line-height:1.25;color:var(--text)}
+
+.hudLeft{position:absolute;left:22px;top:50%;transform:translateY(-50%);width:196px}
+.meter{margin-bottom:16px}
+.meter .k{font-size:11px;color:var(--dim);display:flex;justify-content:space-between;
+  margin-bottom:6px}
+.bar{height:6px;background:var(--surface);border-radius:999px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ok);width:0%}
+/* Die Zone ist eine Markierung, keine Fläche: eine Linie reicht, um zu sagen,
+   wo der Bereich endet. */
+.bar .zone{position:absolute;top:0;bottom:0;border-right:1px solid var(--dim)}
+
+.hudBottom{position:absolute;bottom:24px;left:0;right:0;text-align:center;
+  color:var(--dim);font-size:12px}
+.cue{position:absolute;top:26%;left:0;right:0;text-align:center;font-size:34px;
+  font-weight:600;letter-spacing:.02em;text-shadow:0 2px 24px rgba(0,0,0,.7)}
 .ammo{position:absolute;right:26px;bottom:24px;text-align:right}
-.ammo .n{font-size:40px;font-weight:700;line-height:1}
-.ammo .w{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ammo .n{font-size:34px;font-weight:500;line-height:1}
+.ammo .w{font-size:11px;color:var(--dim);margin-top:2px}
 
-#pause{position:fixed;inset:0;z-index:30;background:rgba(11,17,22,.9);display:flex;
-  align-items:center;justify-content:center;text-align:center}
-#pause .box{max-width:420px}
-#pause h2{font-size:30px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
-#pause p{color:var(--dim);font-size:14px;line-height:1.6;margin-bottom:18px}
+/* ---------- Pause ---------- */
 
-/* results */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);
-  border:1px solid var(--line)}
-.stat{background:var(--steel);padding:16px 14px}
-.stat .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
-.stat .v{font-size:30px;font-weight:700;line-height:1.15;margin-top:2px}
-.stat .v small{font-size:14px;color:var(--dim);font-weight:400}
-.coach{border-left:3px solid var(--sig);background:var(--steel);padding:14px 16px;margin-top:16px;
-  font-size:14.5px;line-height:1.6}
-.coach b{color:var(--sig);letter-spacing:.1em;text-transform:uppercase;font-size:11px;display:block;margin-bottom:4px}
-table.hist{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
-table.hist th{text-align:left;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
-  border-bottom:1px solid var(--line);padding:6px 8px}
-table.hist td{padding:6px 8px;border-bottom:1px solid #1a232c}
-table.hist td.n{text-align:right;font-variant-numeric:tabular-nums}
-.newbest{color:var(--ok);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+/* Nur ein Hauch Unschärfe: genug, damit der Text vor der Szene steht, wenig
+   genug, dass man noch sieht, wo man ist. */
+#pause{position:fixed;inset:0;z-index:30;background:rgba(14,17,22,.72);display:flex;
+  align-items:center;justify-content:center;text-align:center;padding:24px;
+  backdrop-filter:blur(2px)}
+#pause .box{max-width:400px}
+#pause h2{font-size:22px;font-weight:600;margin-bottom:8px}
+#pause p{color:var(--dim);font-size:14px;line-height:1.6}
+#pause .row{justify-content:center}
 
-.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);
-  font-size:12.5px;line-height:1.7}
-@media (max-width:640px){.logo{font-size:28px}.hudLeft{display:none}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ---------- Ergebnis ---------- */
 
-/* Wurzel des Spiels: der 3D-Canvas füllt das Fenster, der Zeiger verschwindet. */
-#gameRoot{position:fixed;inset:0;background:var(--void)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:16px}
+.stat .k{font-size:11px;color:var(--dim)}
+.stat .v{font-size:26px;font-weight:500;line-height:1.2;margin-top:4px}
+
+.coach{border-left:2px solid var(--sig);background:var(--surface);padding:14px 16px;
+  margin-top:12px;font-size:14px;line-height:1.6;border-radius:0 var(--r) var(--r) 0}
+.coach b{color:var(--dim);font-size:11px;font-weight:500;display:block;margin-bottom:4px}
+
+table.hist{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+table.hist th{text-align:left;font-size:11px;font-weight:500;color:var(--dim);
+  padding:8px 10px;border-bottom:1px solid var(--line)}
+table.hist td{padding:9px 10px;color:var(--text)}
+table.hist tr+tr td{border-top:1px solid var(--line)}
+table.hist td.n{text-align:right}
+.newbest{color:var(--sig);font-size:11px;font-weight:500}
+
+.foot{margin-top:28px;color:var(--dim);font-size:13px;line-height:1.6}
+
+/* ---------- Spielwurzel ---------- */
+
+#gameRoot{position:fixed;inset:0;background:var(--bg)}
 #gameRoot canvas{display:block;width:100%;height:100%;cursor:none}
 #xhair{position:fixed;inset:0;pointer-events:none;z-index:9}
+
 .webglfail{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:32px;z-index:40;background:var(--void)}
+  text-align:center;padding:32px;z-index:40;background:var(--bg)}
 .webglfail p{max-width:460px;color:var(--dim);line-height:1.6}
 
-/* Trefferfeedback: Ring und Text, 550 ms, danach entfernt der Aufrufer das Element. */
-#fxLayer{position:fixed;inset:0;pointer-events:none;z-index:11;overflow:hidden}
-.fx{position:absolute;transform:translate(-50%,-50%);font:700 17px ui-monospace,monospace;
-  white-space:nowrap;animation:fxText .55s linear forwards}
-.fx:before{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;
-  border:2px solid currentColor;border-radius:50%;animation:fxRing .55s linear forwards}
-.fx-good{color:var(--ok)}
-.fx-bad{color:var(--sig)}
-.fx-warn{color:var(--warn)}
-@keyframes fxText{from{opacity:1;transform:translate(-50%,-50%)}
-  to{opacity:0;transform:translate(-50%,calc(-50% - 48px))}}
-@keyframes fxRing{from{transform:scale(1);opacity:1}to{transform:scale(7);opacity:0}}
-@media (prefers-reduced-motion:reduce){.fx,.fx:before{animation-duration:.2s}}
+@media (max-width:640px){
+  .screen{padding:24px 16px 56px}
+  header.brand{align-items:flex-start}
+  .hudLeft{display:none}
+  .pill{min-width:76px;padding:6px 12px 7px}
+  .pill .v{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}

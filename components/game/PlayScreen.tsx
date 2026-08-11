@@ -8,7 +8,6 @@ import { Range } from './Range'
 import { SprayWall } from './SprayWall'
 import { Targets } from './Targets'
 import { Crosshair } from '@/components/hud/Crosshair'
-import { FxLayer, type FxHandle } from '@/components/hud/FxLayer'
 import { Hud, type HudHandle } from '@/components/hud/Hud'
 import { PauseOverlay } from '@/components/hud/PauseOverlay'
 import { Results } from '@/components/hud/Results'
@@ -46,7 +45,6 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const inputRef = useRef<Input | null>(null)
   const frozenRef = useRef(true)
   const hudRef = useRef<HudHandle | null>(null)
-  const fxRef = useRef<FxHandle | null>(null)
   // Merkt sich, ob in diesem Lauf schon gebunden wurde — unterscheidet
   // „Bereit“ (vor dem ersten Lock) von „Pausiert“ (danach).
   const startedRef = useRef(false)
@@ -72,7 +70,7 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   /** Ergebnis von `submitRun` — genau einmal je beendetem Lauf ermittelt. */
   const [isBest, setIsBest] = useState(false)
   /** Erzwingt bei „Nochmal“ einen frischen `GameLoop`: neuer Key, neue Montage.
-   *  Canvas, Targets, SprayWall, Hud und FxLayer bleiben dieselbe Instanz —
+   *  Canvas, Targets, SprayWall und Hud bleiben dieselbe Instanz —
    *  nur die Bildschleife selbst startet neu. */
   const [runId, setRunId] = useState(0)
 
@@ -138,7 +136,6 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           inputRef={inputRef}
           frozenRef={frozenRef}
           hudRef={hudRef}
-          fxRef={fxRef}
           onOver={() => {
             overRef.current = true
             frozenRef.current = true
@@ -155,7 +152,6 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
         {mode.id === 'spray' && <SprayWall gameRef={gameRef} />}
       </Canvas>
       <Hud handleRef={hudRef} meters={!!mode.meters} />
-      <FxLayer handleRef={fxRef} />
       <Crosshair />
       {/* gameRef ändert sich nicht mehr, sobald `over` steht: tick() läuft dann
           nirgends mehr, der Lesezugriff hier ist sicher, auch wenn der Compiler

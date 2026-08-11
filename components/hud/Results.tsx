@@ -61,17 +61,17 @@ export function Results({
 
         <div className="row">
           {step?.next ? (
-            <button className="btn cut" onClick={() => onNext(step.next!.href)}>
+            <button className="btn" onClick={() => onNext(step.next!.href)}>
               Weiter in der Routine
             </button>
           ) : (
-            <button className="btn cut" onClick={onAgain}>Nochmal</button>
+            <button className="btn" onClick={onAgain}>Nochmal</button>
           )}
-          <button className="btn ghost cut" onClick={onMenu}>Zurück</button>
+          <button className="btn ghost" onClick={onMenu}>Zurück</button>
         </div>
 
         {step && !step.next && (
-          <div className="foot">Routine durch — {step.label} war die letzte Station.</div>
+          <div className="foot">Routine durch. {step.label} war die letzte Station.</div>
         )}
 
         {/* Erst ab dem zweiten Lauf: eine Tabelle mit einer Zeile sagt nichts. */}

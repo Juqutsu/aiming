@@ -1,13 +1,22 @@
 import type { Metadata } from 'next'
-import { Roboto_Condensed } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 import { SettingsProvider } from '@/components/settings/SettingsProvider'
 import './globals.css'
 import './range.css'
 
-const condensed = Roboto_Condensed({
-  variable: '--font-condensed',
+/**
+ * Zwei Schnitte, klar getrennte Aufgaben: Geist trägt die Oberfläche, Geist Mono
+ * jede Zahl. In einem Trainer sind Zahlen der Inhalt — sie brauchen feste
+ * Zeichenbreiten, damit eine tickende Uhr die Zeile nicht verschiebt.
+ */
+const sans = Geist({
+  variable: '--font-geist-sans',
   subsets: ['latin'],
-  weight: ['400', '700'],
+})
+
+const mono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 })
 
 export const metadata: Metadata = {
@@ -19,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     // `dark` fest gesetzt: RANGE hat keinen hellen Modus, und ohne die Klasse
     // greifen die shadcn-Tokens aus globals.css in ihrer hellen Fassung.
-    <html lang="de" className={`dark ${condensed.variable}`}>
+    <html lang="de" className={`dark ${sans.variable} ${mono.variable}`}>
       <body>
         <SettingsProvider>{children}</SettingsProvider>
       </body>

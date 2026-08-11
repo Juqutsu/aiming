@@ -8,9 +8,14 @@ export type CrosshairConfig = {
   outline: boolean
 }
 
-/** Die Voreinstellung des Originals. */
+/**
+ * Die Voreinstellung.
+ *
+ * Neutrales Weiß statt einer Signalfarbe: die Ziele sind das einzige Warme im
+ * Bild, und ein farbiges Crosshair würde genau davor konkurrieren.
+ */
 export const DEFAULT_CROSSHAIR: CrosshairConfig = {
-  color: '#25e0b8',
+  color: '#e6e8ec',
   gap: 3,
   len: 6,
   thick: 2,

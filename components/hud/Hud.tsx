@@ -57,13 +57,15 @@ export function Hud({
 
   return (
     <div id="hud">
+      {/* Eine Leiste, vier Zellen: die Zahlen stehen fest nebeneinander, statt
+          als vier einzelne Kacheln im Blickfeld zu schweben. */}
       <div className="hudTop">
-        <div className="pill cut"><div className="k">Zeit</div><div className="v">{s.time}</div></div>
-        <div className="pill cut"><div className="k">Score</div><div className="v sig">{s.score}</div></div>
-        <div className="pill cut"><div className="k">Acc</div><div className="v">{s.acc}</div></div>
-        <div className="pill cut">
+        <div className="pill"><div className="k">Zeit</div><div className="v">{s.time}</div></div>
+        <div className="pill"><div className="k">Score</div><div className="v">{s.score}</div></div>
+        <div className="pill"><div className="k">Acc</div><div className="v">{s.acc}</div></div>
+        <div className="pill">
           <div className="k">{s.extraLabel}</div>
-          <div className="v ok">{s.extra}</div>
+          <div className="v">{s.extra}</div>
         </div>
       </div>
 

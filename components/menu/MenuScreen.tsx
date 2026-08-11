@@ -1,13 +1,14 @@
 'use client'
 
-import { Settings2 } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import { CrosshairMark } from '@/components/settings/CrosshairPreview'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { useSettings } from '@/components/settings/SettingsProvider'
 import { MODE_LIST } from '@/lib/engine/modes'
 import { ROUTINES, type RoutineId } from '@/lib/engine/routines'
-import { cm360, edpi, HFOV_DEG } from '@/lib/engine/sens'
+import { cm360, edpi } from '@/lib/engine/sens'
 import type { ModeDef } from '@/lib/engine/types'
 import { routineHref } from '@/lib/routine/step'
 
@@ -23,7 +24,7 @@ function minuten(steps: readonly [string, number][]): number {
 }
 
 export default function MenuScreen() {
-  const { settings: s, best, ready } = useSettings()
+  const { settings: s, crosshair, best, ready } = useSettings()
   const [offen, setOffen] = useState(false)
 
   return (
@@ -32,24 +33,22 @@ export default function MenuScreen() {
         <header className="brand">
           <div>
             <div className="logo">RA<em>N</em>GE</div>
-            <div className="tag">Aim &amp; Movement Trainer</div>
+            <div className="tag">Aim- und Movement-Trainer</div>
           </div>
           <div className="headtools">
+            <div className="mark"><CrosshairMark cfg={crosshair} /></div>
             <button type="button" className="sensbadge" onClick={() => setOffen(true)}>
-              Sens <b>{s.sens.toFixed(3)}</b> · <b>{s.dpi}</b> DPI · eDPI{' '}
-              <b>{Math.round(edpi(s.sens, s.dpi))}</b>
+              Sens <b>{s.sens.toFixed(3)}</b> · {s.dpi} DPI
               <br />
-              <b>{cm360(s.sens, s.dpi).toFixed(1)}</b> cm/360 · FOV {HFOV_DEG} (Hor+)
+              eDPI <b>{Math.round(edpi(s.sens, s.dpi))}</b> · {cm360(s.sens, s.dpi).toFixed(1)} cm/360
             </button>
-            {/* Das Zahnrad daneben, damit die Einstellungen auch ohne Raten
-                auffindbar sind — der Badge allein sieht nicht klickbar aus. */}
             <button
               type="button"
-              className="gear cut"
+              className="gear"
               aria-label="Einstellungen"
               onClick={() => setOffen(true)}
             >
-              <Settings2 size={18} />
+              <SlidersHorizontal size={17} strokeWidth={1.75} />
             </button>
           </div>
         </header>
@@ -60,7 +59,7 @@ export default function MenuScreen() {
             {(Object.keys(ROUTINES) as RoutineId[]).map((id) => {
               const r = ROUTINES[id]
               return (
-                <Link className="card cut" key={id} href={routineHref(id)}>
+                <Link className="card" key={id} href={routineHref(id)}>
                   <span className="skill core">Routine</span>
                   <h3>{r.name}</h3>
                   <p>{r.desc}</p>
@@ -81,15 +80,18 @@ export default function MenuScreen() {
               {MODE_LIST.filter((m) => m.cat === cat).map((m) => {
                 const b = best[m.id]
                 return (
-                  <Link className="card cut" key={m.id} href={`/play/${m.id}`}>
-                    <span className={`skill${m.core ? ' core' : ''}`}>{m.skill}</span>
+                  <Link className="card" key={m.id} href={`/play/${m.id}`}>
+                    {/* Nur wenn die Fertigkeit mehr sagt als die Gruppe darüber.
+                        „Movement“ unter der Überschrift „Movement“ ist kein Label,
+                        sondern Rauschen. */}
+                    {m.skill !== title && <span className="skill">{m.skill}</span>}
                     <h3>{m.name}</h3>
                     <p>{m.desc}</p>
                     <div className="best">
                       <span>{m.metricName}</span>
-                      {/* Vor dem ersten Lesen aus dem Speicher steht der Strich:
+                      {/* Vor dem ersten Lesen aus dem Speicher steht ein Strich:
                           eine 0 wäre gelogen, ein Aufblitzen unruhig. */}
-                      <b>{ready && b !== undefined ? Math.round(b) : '—'}</b>
+                      <b>{ready && b !== undefined ? Math.round(b) : '-'}</b>
                     </div>
                   </Link>
                 )

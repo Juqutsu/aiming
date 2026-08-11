@@ -118,25 +118,27 @@
 
   /* Auf die RANGE-Palette gezogen: der Dialog steht über einem dunklen Spiel,
      die neutralen shadcn-Grautöne würden davor wie ein Fremdkörper wirken.
-     Die Werte kommen aus app/range.css, damit es nur eine Quelle gibt. */
-  --background: var(--void);
-  --foreground: var(--bone);
-  --card: var(--steel);
-  --card-foreground: var(--bone);
-  --popover: var(--steel);
-  --popover-foreground: var(--bone);
-  --secondary: var(--steel-2);
-  --secondary-foreground: var(--bone);
-  --muted: var(--steel-2);
+     Die Werte kommen aus app/range.css, damit es nur eine Quelle gibt.
+     `--accent` heißt bei shadcn „gedämpfte Hervorhebung“ und nicht
+     „Akzentfarbe“ — deshalb steht dort eine Fläche, nicht das Orange. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --secondary: var(--raised);
+  --secondary-foreground: var(--text);
+  --muted: var(--raised);
   --muted-foreground: var(--dim);
-  --accent: var(--steel-2);
-  --accent-foreground: var(--bone);
+  --accent: var(--raised);
+  --accent-foreground: var(--text);
   --border: var(--line);
   --input: var(--line);
   --primary: var(--sig);
-  --primary-foreground: var(--void);
+  --primary-foreground: var(--sig-ink);
   --destructive: var(--sig);
-  --ring: var(--ok);
+  --ring: var(--sig);
 }
 
 @layer base {
