@@ -34,7 +34,10 @@ export default function HistoryScreen() {
   // Der Zeitraum gilt nur für diesen Besuch. Dreissig Tage sind lang genug für
   // einen Trend und kurz genug, dass die Kurve nicht zur Tapete wird.
   const [period, setPeriod] = useState<Period>('30d')
-  const [mode, setMode] = useState<ModeId>('gridshot')
+  // `null` heisst: noch keine bewusste Wahl. Die Anfangsauswahl folgt dann den
+  // Daten (erster gespielter Modus); ein Klick überschreibt sie dauerhaft und
+  // wird nicht mehr von einem Zeitraumwechsel überstimmt.
+  const [gewaehlt, setGewaehlt] = useState<ModeId | null>(null)
   // Lazy-Initialisierung: `Date.now()` läuft so nur einmal beim Mount statt bei
   // jedem Render — die Reinheitsregel der Hooks verbietet impure Aufrufe im
   // Render-Körper selbst.
@@ -45,6 +48,9 @@ export default function HistoryScreen() {
     () => MODE_LIST.filter((m) => sichtbar.some((r) => r.mode === m.id)).map((m) => m.id),
     [sichtbar],
   )
+  // Fallback 'gridshot' greift nur, wenn `gespielt` leer ist — dann zeigt der
+  // Trend-Abschnitt ohnehin seinen Empty-State, dieser Wert wird nie gelesen.
+  const mode = gewaehlt ?? gespielt[0] ?? 'gridshot'
   const punkte = useMemo(() => trend(sichtbar, mode), [sichtbar, mode])
   const zeilen = useMemo(() => profile(sichtbar), [sichtbar])
   const tage = useMemo(() => byDay(sichtbar), [sichtbar])
@@ -106,7 +112,7 @@ export default function HistoryScreen() {
                     type="button"
                     className="chip"
                     aria-pressed={id === mode}
-                    onClick={() => setMode(id)}
+                    onClick={() => setGewaehlt(id)}
                   >
                     {MODES[id].name}
                   </button>
