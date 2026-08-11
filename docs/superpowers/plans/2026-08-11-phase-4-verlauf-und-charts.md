@@ -19,7 +19,8 @@
 - **Vergleichbar** heißt: `dur` und `size` gleich den Werten aus `DEFAULT_SETTINGS` (`dur: 60`, `sizeMul: 1.0`). Die Waffe zählt nicht hinein.
 - **`lowerBetter` dreht das Vorzeichen genau zweimal:** in `profile()` (für `delta`), in `byDay()` (für `best`) — und in `bestIndex()` für die Punktfarbe. Nie in einer Komponente.
 - **Farbregel:** Datenlinie `var(--text)`, Punkte `var(--dim)`, nur der beste Punkt `var(--sig)`, Achsen und Raster `var(--line)`. Orange trägt Ziele und primäre Aktion — eine Datenlinie ist keins von beidem.
-- **Marken-Spezifikation (dataviz):** Linien 2 px mit runden Enden, Punkte r ≥ 4 mit 2 px Ring in Flächenfarbe, Rasterlinien 1 px durchgezogen (nie gestrichelt), keine Zahl an jedem Punkt, eine Achse.
+- **Marken-Spezifikation (dataviz):** Linien 2 px mit runden Enden, Punkte r ≥ 4 mit 2 px Ring in Flächenfarbe, Rasterlinien 1 px durchgezogen (nie gestrichelt), keine Zahl an jedem Punkt, eine Achse. **Die Sparkline ist davon ausgenommen:** auf 96×24 Pixeln trägt sie eine 1,5-px-Linie und einen Punkt mit r=2,5 samt 1,5-px-Ring — ein 12 px breiter Punkt füllte die halbe Kachel und verdeckte die Kurve, die er markieren soll.
+- **Barrierefreiheit:** jedes Chart trägt eine textliche Entsprechung. Beim `LineChart` ist das ein visuell verstecktes Element (`.vh`) mit Zusammenfassung und allen Punkten; die Sparkline trägt stattdessen `role="img"` mit `aria-label` — für ein 96 Pixel breites Zeichen ohne Achsen die passendere Form als eine versteckte Liste aus zwanzig Zahlen auf jeder der elf Modus-Karten.
 - **Kein Migrationsschritt** für `range.session.v1`: der alte Schlüssel bleibt liegen und verfällt mit der Sitzung.
 - **Commit-Nachrichten** deutsch ohne Umlaute, wie die bestehende Historie (`feat: ...`, `refactor: ...`).
 
