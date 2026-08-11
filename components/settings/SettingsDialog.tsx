@@ -90,7 +90,7 @@ export function SettingsDialog({
   open: boolean
   onOpenChange(open: boolean): void
 }) {
-  const { settings: s, crosshair: x, setSettings, setCrosshair, resetBest } = useSettings()
+  const { settings: s, crosshair: x, setSettings, setCrosshair, resetBest, resetRuns } = useSettings()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -240,18 +240,31 @@ export function SettingsDialog({
         </Tabs>
 
         <Separator />
-        <Button
-          variant="destructive"
-          className="justify-self-start"
-          onClick={() => {
-            // Rückfrage, weil der Schritt nicht umkehrbar ist.
-            if (window.confirm('Alle Bestwerte löschen? Das lässt sich nicht rückgängig machen.')) {
-              resetBest()
-            }
-          }}
-        >
-          Bestwerte löschen
-        </Button>
+        {/* Zwei Knöpfe statt eines gemeinsamen: Bestwerte und Verlauf sind für
+            den Spielenden nicht dasselbe. */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="destructive"
+            onClick={() => {
+              // Rückfrage, weil der Schritt nicht umkehrbar ist.
+              if (window.confirm('Alle Bestwerte löschen? Das lässt sich nicht rückgängig machen.')) {
+                resetBest()
+              }
+            }}
+          >
+            Bestwerte löschen
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (window.confirm('Den ganzen Verlauf löschen? Die Bestwerte bleiben stehen.')) {
+                resetRuns()
+              }
+            }}
+          >
+            Verlauf löschen
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )
