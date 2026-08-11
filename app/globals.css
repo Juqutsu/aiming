@@ -115,6 +115,28 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Auf die RANGE-Palette gezogen: der Dialog steht über einem dunklen Spiel,
+     die neutralen shadcn-Grautöne würden davor wie ein Fremdkörper wirken.
+     Die Werte kommen aus app/range.css, damit es nur eine Quelle gibt. */
+  --background: var(--void);
+  --foreground: var(--bone);
+  --card: var(--steel);
+  --card-foreground: var(--bone);
+  --popover: var(--steel);
+  --popover-foreground: var(--bone);
+  --secondary: var(--steel-2);
+  --secondary-foreground: var(--bone);
+  --muted: var(--steel-2);
+  --muted-foreground: var(--dim);
+  --accent: var(--steel-2);
+  --accent-foreground: var(--bone);
+  --border: var(--line);
+  --input: var(--line);
+  --primary: var(--sig);
+  --primary-foreground: var(--void);
+  --destructive: var(--sig);
+  --ring: var(--ok);
 }
 
 @layer base {

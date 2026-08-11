@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Roboto_Condensed } from 'next/font/google'
+import { SettingsProvider } from '@/components/settings/SettingsProvider'
 import './globals.css'
 import './range.css'
 
@@ -16,8 +17,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="de" className={condensed.variable}>
-      <body>{children}</body>
+    // `dark` fest gesetzt: RANGE hat keinen hellen Modus, und ohne die Klasse
+    // greifen die shadcn-Tokens aus globals.css in ihrer hellen Fassung.
+    <html lang="de" className={`dark ${condensed.variable}`}>
+      <body>
+        <SettingsProvider>{children}</SettingsProvider>
+      </body>
     </html>
   )
 }
