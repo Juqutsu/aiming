@@ -99,7 +99,10 @@ export default function MenuScreen() {
         ))}
       </div>
 
-      <SettingsDialog open={offen} onOpenChange={setOffen} />
+      {/* Erst ab `ready`: vorher gelten die Standardwerte, und das
+          unkontrollierte DPI-Feld würde seinen `defaultValue` nachträglich
+          wechseln — Base UI warnt darüber zu Recht. */}
+      {ready && <SettingsDialog open={offen} onOpenChange={setOffen} />}
     </div>
   )
 }
