@@ -13,6 +13,9 @@ export const KEY = {
   crosshair: 'range.crosshair.v1',
   best: 'range.best.v1',
   session: 'range.session.v1',
+  runs: 'range.runs.v1',
+  /** Nur der Zeitstempel, in `sessionStorage`: „seit wann ist dieses Tab offen". */
+  sessionStart: 'range.session.start.v1',
 } as const
 
 /** Rohwert aus dem Speicher. Unlesbares gilt als nicht vorhanden. */

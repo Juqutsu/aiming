@@ -39,7 +39,7 @@ export function beatsBest(metric: number, prev: number | undefined, lowerBetter:
  * Bestwert, den niemand gespielt hat. Klick- und Halte-Modi unterscheiden sich
  * darin, was „etwas passiert" heisst, deshalb beide Zähler.
  */
-function hatGemessen(g: GameState): boolean {
+export function hasMeasured(g: GameState): boolean {
   return g.shots > 0 || g.trackTotal > 0
 }
 
@@ -49,7 +49,7 @@ export function submitBest(
   g: GameState,
   best: BestMap,
 ): { best: BestMap; isBest: boolean } {
-  if (!hatGemessen(g)) return { best, isBest: false }
+  if (!hasMeasured(g)) return { best, isBest: false }
   const metric = g.mode.metric(g)
   if (!Number.isFinite(metric)) return { best, isBest: false }
   if (!beatsBest(metric, best[g.mode.id], !!g.mode.lowerBetter)) return { best, isBest: false }
