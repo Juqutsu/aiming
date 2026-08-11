@@ -14,7 +14,7 @@ export function BarRow({ label, fill, value, hint }: {
   hint: string
 }) {
   return (
-    <div className="bar">
+    <div className="profbar">
       <span>
         {label}
         <span className="vh"> — {hint}</span>
