@@ -39,7 +39,7 @@ function hasWebgl(): boolean {
 export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const mode = MODES[modeId]
   const router = useRouter()
-  const { settings, ready } = useSettings()
+  const { settings, ready, submitRun } = useSettings()
   const step = readStep(useSearchParams(), modeId)
   const hostRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<GameState | null>(null)
@@ -69,6 +69,8 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
   const webgl = useSyncExternalStore(noopSubscribe, hasWebgl, () => true)
   const [locked, setLocked] = useState(false)
   const [over, setOver] = useState(false)
+  /** Ergebnis von `submitRun` — genau einmal je beendetem Lauf ermittelt. */
+  const [isBest, setIsBest] = useState(false)
   /** Erzwingt bei „Nochmal“ einen frischen `GameLoop`: neuer Key, neue Montage.
    *  Canvas, Targets, SprayWall, Hud und FxLayer bleiben dieselbe Instanz —
    *  nur die Bildschleife selbst startet neu. */
@@ -140,6 +142,10 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
           onOver={() => {
             overRef.current = true
             frozenRef.current = true
+            // Hier und nicht im Render von `Results`: sonst zählte jeder
+            // erneute Render einen weiteren Lauf.
+            const g = gameRef.current
+            setIsBest(g ? submitRun(g) : false)
             setOver(true)
             document.exitPointerLock()
           }}
@@ -159,6 +165,9 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
         <Results
           // eslint-disable-next-line react-hooks/refs -- derselbe sichere Zugriff wie oben
           game={gameRef.current}
+          isBest={isBest}
+          step={step}
+          onNext={(href) => router.push(href)}
           onAgain={() => {
             // Synchron und vor den beiden set*-Aufrufen: R3F haengt useFrame
             // schon in der Layout-Phase ein, gameRef.current wird aber erst im
@@ -170,6 +179,7 @@ export default function PlayScreen({ modeId }: { modeId: ModeId }) {
             startedRef.current = false
             overRef.current = false
             frozenRef.current = true
+            setIsBest(false)
             setOver(false)
             setRunId((n) => n + 1)
           }}

@@ -1,23 +1,50 @@
 'use client'
 
+import { useSettings } from '@/components/settings/SettingsProvider'
 import { coachLine } from '@/lib/engine/coach'
 import type { GameState } from '@/lib/engine/types'
+import type { RoutineStep } from '@/lib/routine/step'
 
 export function Results({
-  game, onAgain, onMenu,
+  game, isBest, step, onAgain, onNext, onMenu,
 }: {
   game: GameState
+  /** Ob dieser Lauf einen neuen Bestwert gesetzt hat. Ermittelt beim Rundenende, nicht hier. */
+  isBest: boolean
+  step: RoutineStep | null
   onAgain: () => void
+  onNext: (href: string) => void
   onMenu: () => void
 }) {
+  const { settings, best, history } = useSettings()
   const rows = game.mode.stats(game)
+  const metrik = game.mode.metric(game)
+  const bisher = best[game.mode.id]
+
   return (
     <div className="screen">
       <div className="wrap">
         <header className="brand">
           <div>
             <div className="logo">{game.mode.name}</div>
-            <div className="tag">{game.dur} Sekunden</div>
+            <div className="tag">
+              {game.dur} Sekunden · Sens {settings.sens.toFixed(3)}
+              {step && ` · ${step.label}`}
+            </div>
+          </div>
+          <div className="sensbadge">
+            {isBest ? (
+              <>
+                <span className="newbest">Neuer Bestwert</span>
+                <br />
+                {game.mode.metricName}: <b>{metrik}</b>
+              </>
+            ) : (
+              <>
+                {game.mode.metricName}: <b>{metrik}</b>
+                {bisher !== undefined && <> · Best: <b>{Math.round(bisher)}</b></>}
+              </>
+            )}
           </div>
         </header>
 
@@ -33,9 +60,48 @@ export function Results({
         <div className="coach"><b>Coach</b><span>{coachLine(game)}</span></div>
 
         <div className="row">
-          <button className="btn cut" onClick={onAgain}>Nochmal</button>
+          {step?.next ? (
+            <button className="btn cut" onClick={() => onNext(step.next!.href)}>
+              Weiter in der Routine
+            </button>
+          ) : (
+            <button className="btn cut" onClick={onAgain}>Nochmal</button>
+          )}
           <button className="btn ghost cut" onClick={onMenu}>Zurück</button>
         </div>
+
+        {step && !step.next && (
+          <div className="foot">Routine durch — {step.label} war die letzte Station.</div>
+        )}
+
+        {/* Erst ab dem zweiten Lauf: eine Tabelle mit einer Zeile sagt nichts. */}
+        {history.length > 1 && (
+          <>
+            <div className="eyebrow">Session</div>
+            <table className="hist">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Modus</th>
+                  <th className="n">Score</th>
+                  <th className="n">Acc</th>
+                  <th className="n">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((r, i) => (
+                  <tr key={i}>
+                    <td>{i + 1}</td>
+                    <td>{r.mode}</td>
+                    <td className="n">{r.score}</td>
+                    <td className="n">{r.acc}</td>
+                    <td className="n">{r.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
     </div>
   )
