@@ -29,22 +29,22 @@ describe('byDay', () => {
 
   it('fuehrt jeden Modus einmal, in der Reihenfolge des ersten Laufs', () => {
     const tage = byDay([
-      run(at(2026, 8, 11, 8), { mode: 'flick' }),
-      run(at(2026, 8, 11, 9), { mode: 'gridshot' }),
-      run(at(2026, 8, 11, 10), { mode: 'flick' }),
+      run(at(2026, 8, 11, 8), { mode: 'gridshot' }),
+      run(at(2026, 8, 11, 9), { mode: 'flick' }),
+      run(at(2026, 8, 11, 10), { mode: 'gridshot' }),
     ])
-    expect(tage[0].modes).toEqual(['flick', 'gridshot'])
+    expect(tage[0].modes).toEqual(['gridshot', 'flick'])
   })
 
   it('nimmt je Modus den groessten Wert', () => {
-    const tage = byDay([run(at(2026, 8, 11, 8), { metric: 30 }), run(at(2026, 8, 11, 9), { metric: 42 })])
+    const tage = byDay([run(at(2026, 8, 11, 8), { metric: 42 }), run(at(2026, 8, 11, 9), { metric: 30 })])
     expect(tage[0].best.gridshot).toBe(42)
   })
 
   it('nimmt bei lowerBetter den kleinsten Wert', () => {
     const tage = byDay([
-      run(at(2026, 8, 11, 8), { mode: 'reaction', metric: 260 }),
-      run(at(2026, 8, 11, 9), { mode: 'reaction', metric: 210 }),
+      run(at(2026, 8, 11, 8), { mode: 'reaction', metric: 210 }),
+      run(at(2026, 8, 11, 9), { mode: 'reaction', metric: 260 }),
     ])
     expect(tage[0].best.reaction).toBe(210)
   })
@@ -53,5 +53,9 @@ describe('byDay', () => {
     const tage = byDay([run(at(2026, 8, 11, 8), { size: 1.5, metric: 90 })])
     expect(tage[0].runs).toBe(1)
     expect(tage[0].best.gridshot).toBe(90)
+  })
+
+  it('liefert ein leeres Array fuer keine Laeufe', () => {
+    expect(byDay([])).toEqual([])
   })
 })
