@@ -1,6 +1,6 @@
 'use client'
 
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { CrosshairMark } from '@/components/settings/CrosshairPreview'
@@ -42,6 +42,9 @@ export default function MenuScreen() {
               <br />
               eDPI <b>{Math.round(edpi(s.sens, s.dpi))}</b> · {cm360(s.sens, s.dpi).toFixed(1)} cm/360
             </button>
+            <Link className="gear" href="/verlauf" aria-label="Verlauf">
+              <TrendingUp size={17} strokeWidth={1.75} />
+            </Link>
             <button
               type="button"
               className="gear"
