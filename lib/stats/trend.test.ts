@@ -46,4 +46,20 @@ describe('bestIndex', () => {
   it('liefert ohne Punkte minus eins', () => {
     expect(bestIndex([], false)).toBe(-1)
   })
+
+  it('ueberspringt einen abweichenden Punkt, auch wenn er der beste Wert ist', () => {
+    const laeufe = [
+      run({ t: 1, metric: 20 }),
+      run({ t: 2, metric: 900, size: 1.5 }),
+      run({ t: 3, metric: 30 }),
+    ]
+    const punkte = trend(laeufe, 'gridshot')
+    expect(bestIndex(punkte, false)).toBe(2)
+  })
+
+  it('liefert minus eins wenn kein Punkt vergleichbar ist', () => {
+    const laeufe = [run({ t: 1, metric: 20, size: 1.5 }), run({ t: 2, metric: 40, dur: 90 })]
+    const punkte = trend(laeufe, 'gridshot')
+    expect(bestIndex(punkte, false)).toBe(-1)
+  })
 })

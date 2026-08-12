@@ -35,7 +35,12 @@ export function trend(runs: Run[], mode: ModeId): TrendPoint[] {
 }
 
 /**
- * Index des besten Punktes, oder -1.
+ * Index des besten **vergleichbaren** Punktes, oder -1.
+ *
+ * Ein abweichender Lauf (`standard === false`) scheidet aus, auch wenn sein
+ * Wert der höchste in der Liste ist — sonst läge der Akzent unter einem Punkt,
+ * den die eigene Legende als „abweichend" markiert. Gibt es keinen
+ * vergleichbaren Punkt, -1.
  *
  * Die einzige Stelle, an der die Farbe eines Punktes von `lowerBetter` abhängt —
  * die Charts bekommen nur noch eine Zahl.
@@ -43,6 +48,7 @@ export function trend(runs: Run[], mode: ModeId): TrendPoint[] {
 export function bestIndex(points: TrendPoint[], lowerBetter: boolean): number {
   let idx = -1
   for (let i = 0; i < points.length; i++) {
+    if (!points[i].standard) continue
     if (idx < 0) {
       idx = i
       continue
