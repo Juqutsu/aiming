@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { avg, ms, pc, pcNum } from './format'
+import { avg, ms, pc, pcNum, shortDate } from './format'
+
+describe('shortDate', () => {
+  it('formatiert einen Zeitstempel als kurzes deutsches Datum', () => {
+    expect(shortDate(new Date(2026, 7, 11).getTime())).toBe('11. Aug')
+  })
+
+  it('nutzt die lokale Zeitzone, nicht UTC', () => {
+    // 23:50 lokal bleibt derselbe Tag, unabhaengig davon, welcher UTC-Tag dahintersteht.
+    expect(shortDate(new Date(2026, 0, 5, 23, 50).getTime())).toBe('5. Jan')
+  })
+})
 
 describe('avg', () => {
   it('mittelt eine Liste', () => {

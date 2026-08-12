@@ -1,18 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { shortDate } from '@/lib/engine/format'
 import type { TrendPoint } from '@/lib/stats/trend'
 
 const W = 640
 const H = 200
 const PAD = { top: 14, right: 14, bottom: 28, left: 44 }
-
-const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-
-function datum(t: number): string {
-  const d = new Date(t)
-  return `${d.getDate()}. ${MONATE[d.getMonth()]}`
-}
 
 /**
  * Die Kurve eines Modus.
@@ -98,10 +92,10 @@ export function LineChart({ points, best, unit, summary }: {
             />
           ))}
 
-          <text x={PAD.left} y={H - 8} fontSize="11" fill="var(--dim)">{datum(points[0].t)}</text>
+          <text x={PAD.left} y={H - 8} fontSize="11" fill="var(--dim)">{shortDate(points[0].t)}</text>
           {points.length > 1 && (
             <text x={W - PAD.right} y={H - 8} textAnchor="end" fontSize="11" fill="var(--dim)">
-              {datum(points[points.length - 1].t)}
+              {shortDate(points[points.length - 1].t)}
             </text>
           )}
         </svg>
@@ -111,7 +105,7 @@ export function LineChart({ points, best, unit, summary }: {
             className="tip"
             style={{ left: `${(x(aktiv) / W) * 100}%`, top: `${(y(points[aktiv].metric) / H) * 100}%` }}
           >
-            {datum(points[aktiv].t)} · <b>{Math.round(points[aktiv].metric)}</b> {unit}
+            {shortDate(points[aktiv].t)} · <b>{Math.round(points[aktiv].metric)}</b> {unit}
             <br />
             {points[aktiv].note}
           </div>
@@ -124,7 +118,7 @@ export function LineChart({ points, best, unit, summary }: {
         <ul>
           {points.map((p) => (
             <li key={p.t}>
-              {datum(p.t)}: {Math.round(p.metric)} {unit} — {p.note}
+              {shortDate(p.t)}: {Math.round(p.metric)} {unit} — {p.note}
               {p.standard ? '' : ' (abweichende Bedingungen)'}
             </li>
           ))}

@@ -1,3 +1,11 @@
+const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+
+/** Ein Zeitstempel als kurzes deutsches Datum, lokale Zeit, z. B. "11. Aug". */
+export function shortDate(t: number): string {
+  const d = new Date(t)
+  return `${d.getDate()}. ${MONATE[d.getMonth()]}`
+}
+
 export function avg(a: number[]): number {
   return a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0
 }

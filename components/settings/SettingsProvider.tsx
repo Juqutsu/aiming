@@ -65,7 +65,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Rückrufe.
   const ref = useRef(state)
   const localRef = useRef<Store | null>(null)
-  const sessionRef = useRef<Store | null>(null)
   // Der Beginn dieser Sitzung. Als Ref, weil er die Ansicht nie selbst ändert —
   // er filtert nur, was aus `runs` in `history` fällt.
   const startRef = useRef(0)
@@ -84,7 +83,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const local = browserStore() ?? memoryStore()
     const session = sessionStore() ?? memoryStore()
     localRef.current = local
-    sessionRef.current = session
     const start = sessionStart(session, Date.now())
     startRef.current = start
     const runs = loadRuns(local)

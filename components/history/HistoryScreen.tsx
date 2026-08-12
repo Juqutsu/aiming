@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { BarRow } from '@/components/charts/BarRow'
 import { LineChart } from '@/components/charts/LineChart'
 import { useSettings } from '@/components/settings/SettingsProvider'
+import { shortDate } from '@/lib/engine/format'
 import { MODES, MODE_LIST } from '@/lib/engine/modes'
 import type { ModeId } from '@/lib/engine/types'
 import { byDay } from '@/lib/stats/days'
@@ -15,12 +16,10 @@ import { bestIndex, trend } from '@/lib/stats/trend'
 
 const PERIODS: [Period, string][] = [['7d', '7 Tage'], ['30d', '30 Tage'], ['all', 'alles']]
 
-const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-
 /** `2026-08-11` als „11. Aug". */
 function tagLabel(day: string): string {
-  const [, monat, tag] = day.split('-').map(Number)
-  return `${tag}. ${MONATE[monat - 1]}`
+  const [jahr, monat, tag] = day.split('-').map(Number)
+  return shortDate(new Date(jahr, monat - 1, tag).getTime())
 }
 
 /** Vorzeichenrichtig, weil positiv „besser" heisst — auch bei Reaktion. */
@@ -48,9 +47,12 @@ export default function HistoryScreen() {
     () => MODE_LIST.filter((m) => sichtbar.some((r) => r.mode === m.id)).map((m) => m.id),
     [sichtbar],
   )
+  // Die bewusste Wahl bleibt in `gewaehlt` erhalten und kommt zurueck, sobald
+  // der Zeitraum wieder Laeufe dafuer zeigt — aber angezeigt wird immer ein
+  // Modus mit Daten, sonst traegt keine Chip-Schaltflaeche `aria-pressed`.
   // Fallback 'gridshot' greift nur, wenn `gespielt` leer ist — dann zeigt der
   // Trend-Abschnitt ohnehin seinen Empty-State, dieser Wert wird nie gelesen.
-  const mode = gewaehlt ?? gespielt[0] ?? 'gridshot'
+  const mode = gewaehlt && gespielt.includes(gewaehlt) ? gewaehlt : (gespielt[0] ?? 'gridshot')
   const punkte = useMemo(() => trend(sichtbar, mode), [sichtbar, mode])
   const zeilen = useMemo(() => profile(sichtbar), [sichtbar])
   const tage = useMemo(() => byDay(sichtbar), [sichtbar])
