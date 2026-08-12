@@ -72,6 +72,17 @@ describe('pushRun', () => {
     expect(store.map.has(KEY.runs)).toBe(false)
   })
 
+  // shots > 0 allein reicht nicht: ein Fehlstart oder ein Fehlschuss zaehlt
+  // den Schuss, ohne react zu fuellen — reaction.metric() gaebe 9999 zurueck.
+  it('traegt einen Reaktions-Fehlstart ohne react nicht ein', () => {
+    const store = fakeStore()
+    const fehlstart = createGame(MODES.reaction, DEFAULT_SETTINGS)
+    fehlstart.shots = 1
+    expect(fehlstart.react).toEqual([])
+    expect(pushRun(store, fehlstart, 1000)).toEqual([])
+    expect(store.map.has(KEY.runs)).toBe(false)
+  })
+
   it('haelt den Deckel und wirft den aeltesten heraus', () => {
     const store = fakeStore()
     let alle: Run[] = []
@@ -97,6 +108,34 @@ describe('isStandard', () => {
     const [gross] = pushRun(store, lauf(30, { sizeMul: 1.5 }), 1000)
     expect(isStandard(gross)).toBe(false)
     expect(isStandard({ ...gross, size: 1, dur: 90 })).toBe(false)
+  })
+
+  // Reaktion ist keine kumulative Metrik (Ø ms) — eine Routinen-Station mit
+  // abweichender Sekundenzahl bleibt trotzdem vergleichbar.
+  it('gilt bei einer Rate-Metrik unabhaengig von der Rundenzeit', () => {
+    const rate: Run = {
+      t: 1000, mode: 'reaction', metric: 250, score: 1, hits: 1, shots: 1,
+      dur: 45, size: 1, weapon: 'vandal',
+    }
+    expect(isStandard(rate)).toBe(true)
+  })
+
+  // Ziele ist eine Summe ueber die Runde — eine Station mit abweichender
+  // Sekundenzahl ist deshalb nicht mehr vergleichbar.
+  it('gilt bei einer kumulativen Metrik nicht bei abweichender Rundenzeit', () => {
+    const summe: Run = {
+      t: 1000, mode: 'gridshot', metric: 30, score: 30, hits: 30, shots: 40,
+      dur: 45, size: 1, weapon: 'vandal',
+    }
+    expect(isStandard(summe)).toBe(false)
+  })
+
+  it('gilt bei abweichender Zielgroesse nicht, auch bei einer Rate-Metrik', () => {
+    const rate: Run = {
+      t: 1000, mode: 'reaction', metric: 250, score: 1, hits: 1, shots: 1,
+      dur: 60, size: 1.5, weapon: 'vandal',
+    }
+    expect(isStandard(rate)).toBe(false)
   })
 })
 

@@ -20,6 +20,9 @@ export const switching: ModeDef = {
   skill: 'Zielwechsel',
   desc: 'Sechs Ziele, alle müssen weg, dann kommt der nächste Satz. Misst die Zeit zwischen zwei Kills — genau das, was Multi-Kills entscheidet.',
   hint: 'Alle sechs Ziele leeren',
+  // Kills ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Kills',
   start(g) {
     newSet(g)

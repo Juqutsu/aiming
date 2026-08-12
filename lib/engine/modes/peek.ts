@@ -36,6 +36,9 @@ export const peek: ModeDef = {
   desc: 'Aus der Deckung raus, ein Duell, zurück. Der Gegner schießt nach 320 ms Sichtkontakt. Gewertet wird deine Zeit im Freien — genau die Disziplin, die dir Runden rettet.',
   hint: 'D peeken · A zurück in Deckung · maximal ein Schuss',
   extraLabel: 'Ø Exposure',
+  // Kills ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Kills',
   start(g) {
     g.player.x = 1.35

@@ -22,6 +22,9 @@ export const counterstrafe: ModeDef = {
   desc: 'Der Pfeil sagt, wohin du strafen musst. Sobald das Ziel erscheint: gegentippen, warten bis du wirklich steht, schießen. Schüsse über 1,0 m/s zählen als Miss.',
   hint: 'A / D strafen · Gegenrichtung tippen · erst schießen wenn der Balken grün ist',
   extraLabel: 'Ø Zeit',
+  // Kills ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Kills',
   start(g) {
     g.data.phase = 'strafe'

@@ -15,6 +15,9 @@ export const gridshot: ModeDef = {
   core: true,
   desc: 'Drei Ziele gleichzeitig, sofortiger Respawn. Trainiert Klickgeschwindigkeit und Zielwechsel unter Zeitdruck.',
   hint: 'Linksklick trifft · Esc pausiert',
+  // Ziele ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Ziele',
   start(g) {
     g.targets = [mk(g), mk(g), mk(g)]

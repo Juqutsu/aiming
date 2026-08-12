@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS } from '@/lib/engine/game'
 import { MODES } from '@/lib/engine/modes'
 import type { GameState, ModeId, WeaponId } from '@/lib/engine/types'
+import { WEAPONS } from '@/lib/engine/weapons'
 import { hasMeasured } from './best'
 import { KEY, readJson, writeJson, type Store } from './keys'
 
@@ -42,8 +43,8 @@ function isRun(v: unknown): v is Run {
   return (
     zahl(r.t) && zahl(r.metric) && zahl(r.score) && zahl(r.hits) && zahl(r.shots) &&
     zahl(r.dur) && zahl(r.size) &&
-    typeof r.mode === 'string' && r.mode in MODES &&
-    (r.weapon === 'vandal' || r.weapon === 'phantom')
+    typeof r.mode === 'string' && Object.hasOwn(MODES, r.mode) &&
+    typeof r.weapon === 'string' && Object.hasOwn(WEAPONS, r.weapon)
   )
 }
 
@@ -61,14 +62,21 @@ export function clearRuns(store: Store): void {
 }
 
 /**
- * Vergleichbar heisst: dieselbe Rundenzeit und dieselbe Zielgrösse wie im
- * Standard. Referenz sind ausdrücklich die Standardwerte, nicht die gerade
- * eingestellten — sonst verschöbe sich die Bedeutung der Kurve rückwirkend,
- * sobald jemand an den Reglern dreht. Die Waffe zählt nicht hinein: sie ändert
- * Spray und Munitionsanzeige, nicht die Schwierigkeit der Aim-Modi.
+ * Vergleichbar heisst: dieselbe Zielgrösse wie im Standard, referenziert
+ * gegen die Standardwerte und nicht die gerade eingestellten — sonst
+ * verschöbe sich die Bedeutung der Kurve rückwirkend, sobald jemand an den
+ * Reglern dreht. Die Waffe zählt nicht hinein: sie ändert Spray und
+ * Munitionsanzeige, nicht die Schwierigkeit der Aim-Modi.
+ *
+ * Die Rundenzeit zählt nur bei kumulativen Metriken hinein. Eine Rate wie
+ * Accuracy oder Ø ms bleibt von der Rundenlänge unberührt — nur wer über die
+ * Runde aufsummiert (Ziele, Kills, Score), wird durch eine andere Dauer
+ * unvergleichbar. Sonst wäre jede Routinen-Station mit abweichender
+ * Sekundenzahl grundlos aus dem Verlauf verbannt.
  */
 export function isStandard(r: Run): boolean {
-  return r.dur === DEFAULT_SETTINGS.dur && r.size === DEFAULT_SETTINGS.sizeMul
+  if (r.size !== DEFAULT_SETTINGS.sizeMul) return false
+  return !MODES[r.mode].cumulative || r.dur === DEFAULT_SETTINGS.dur
 }
 
 /** Trägt einen beendeten Lauf ein und gibt den vollständigen Verlauf zurück. */
