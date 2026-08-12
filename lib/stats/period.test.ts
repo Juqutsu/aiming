@@ -2,32 +2,46 @@ import { describe, expect, it } from 'vitest'
 import type { Run } from '@/lib/store/runs'
 import { inPeriod } from './period'
 
-const TAG = 86_400_000
-const JETZT = 1_700_000_000_000
+/** Lokale Zeit, damit der Test dasselbe Kalenderraster benutzt wie die Fensterberechnung. */
+function at(jahr: number, monat: number, tag: number, stunde: number, minute = 0): number {
+  return new Date(jahr, monat - 1, tag, stunde, minute).getTime()
+}
 
-function run(tageHer: number): Run {
+// Mittwochnachmittag statt Mitternacht: nur so faellt ein Fehler auf, der die
+// Uhrzeit von `now` mit in die Grenze rechnet statt sie auf Mitternacht zu kappen.
+const JETZT = at(2026, 8, 12, 15)
+
+function run(t: number): Run {
   return {
-    t: JETZT - tageHer * TAG, mode: 'gridshot', metric: 30, score: 30, hits: 30, shots: 40,
+    t, mode: 'gridshot', metric: 30, score: 30, hits: 30, shots: 40,
     dur: 60, size: 1, weapon: 'vandal',
   }
 }
 
 describe('inPeriod', () => {
-  const laeufe = [run(40), run(20), run(3), run(0)]
-
   it('behaelt bei sieben Tagen nur die juengsten', () => {
-    expect(inPeriod(laeufe, '7d', JETZT).map((r) => r.t)).toEqual([run(3).t, run(0).t])
+    const laeufe = [run(at(2026, 6, 10, 12)), run(at(2026, 7, 23, 22)), run(at(2026, 8, 9, 6)), run(at(2026, 8, 12, 9))]
+    expect(inPeriod(laeufe, '7d', JETZT).map((r) => r.t)).toEqual([laeufe[2].t, laeufe[3].t])
   })
 
   it('behaelt bei dreissig Tagen auch den zwanzig Tage alten', () => {
+    const laeufe = [run(at(2026, 6, 10, 12)), run(at(2026, 7, 23, 22)), run(at(2026, 8, 9, 6)), run(at(2026, 8, 12, 9))]
     expect(inPeriod(laeufe, '30d', JETZT)).toHaveLength(3)
   })
 
   it('filtert bei alles gar nicht', () => {
+    const laeufe = [run(at(2026, 6, 10, 12)), run(at(2026, 8, 12, 9))]
     expect(inPeriod(laeufe, 'all', JETZT)).toEqual(laeufe)
   })
 
-  it('nimmt den Lauf genau auf der Grenze mit', () => {
-    expect(inPeriod([run(7)], '7d', JETZT)).toHaveLength(1)
+  // Die Grenze liegt auf lokaler Mitternacht, nicht 168 Stunden vor `now`:
+  // ein Lauf vom fruehen Morgen sieben Kalendertage zurueck (6. August, hier
+  // der aelteste noch eingeschlossene Tag) zaehlt mit, einer vom Abend des
+  // Tages davor (5. August) nicht mehr — obwohl beide weniger als 168 h von
+  // `now` (12. August, 15 Uhr) entfernt liegen.
+  it('schneidet an der Kalendertag-Grenze, nicht an 168 Stunden', () => {
+    const frueh = run(at(2026, 8, 6, 6))
+    const spaet = run(at(2026, 8, 5, 22))
+    expect(inPeriod([frueh, spaet], '7d', JETZT)).toEqual([frueh])
   })
 })
