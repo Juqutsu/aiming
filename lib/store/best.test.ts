@@ -70,6 +70,19 @@ describe('submitBest', () => {
     expect(echt.best.reaction).toBe(250)
   })
 
+  // shots > 0 allein reicht nicht: ein Fehlstart zaehlt den Schuss, ohne
+  // react zu fuellen — sonst wuerde reaction.metric() 9999 als Bestwert setzen.
+  it('traegt einen Reaktions-Fehlstart ohne react nicht als Bestwert ein', () => {
+    const store = fakeStore()
+    const fehlstart = createGame(MODES.reaction, DEFAULT_SETTINGS)
+    fehlstart.shots = 1
+    expect(fehlstart.react).toEqual([])
+    const r = submitBest(store, fehlstart, {})
+    expect(r.isBest).toBe(false)
+    expect(r.best.reaction).toBeUndefined()
+    expect(store.map.has(KEY.best)).toBe(false)
+  })
+
   it('traegt einen Tracking-Lauf ohne Feuerzeit nicht ein', () => {
     const store = fakeStore()
     const g = createGame(MODES.tracking, DEFAULT_SETTINGS)

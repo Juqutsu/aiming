@@ -16,6 +16,9 @@ export const reaction: ModeDef = {
   hint: 'Warten · dann sofort schießen',
   extraLabel: 'Ø ms',
   lowerBetter: true,
+  // Fehlstart und Fehlschuss zaehlen shots hoch, ohne react zu fuellen — der
+  // Schuss-Zaehler allein wuerde also den 9999-Sentinel durchwinken.
+  measured: (g) => g.react.length > 0,
   metricName: 'Ø ms',
   start(g) {
     g.targets = []

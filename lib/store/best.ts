@@ -11,7 +11,7 @@ export function loadBest(store: Store): BestMap {
   for (const [k, v] of Object.entries(roh as Record<string, unknown>)) {
     // Unbekannte Schlüssel stammen aus einer anderen Version — sie stillschweigend
     // mitzuschleppen hiesse, sie später als Modus anzuzeigen, den es nicht gibt.
-    if (!(k in MODES)) continue
+    if (!Object.hasOwn(MODES, k)) continue
     if (typeof v === 'number' && Number.isFinite(v)) out[k as ModeId] = v
   }
   return out
@@ -38,9 +38,13 @@ export function beatsBest(metric: number, prev: number | undefined, lowerBetter:
  * Bei `lowerBetter` wäre das trotzdem der erste und damit beste Wert — ein
  * Bestwert, den niemand gespielt hat. Klick- und Halte-Modi unterscheiden sich
  * darin, was „etwas passiert" heisst, deshalb beide Zähler.
+ *
+ * Reicht der Standardtest nicht — weil ein Schuss fällt, ohne dass die Metrik
+ * davon etwas hat, wie bei einem Fehlstart in Reaktion —, entscheidet der
+ * Modus selbst über `measured`.
  */
 export function hasMeasured(g: GameState): boolean {
-  return g.shots > 0 || g.trackTotal > 0
+  return g.mode.measured?.(g) ?? (g.shots > 0 || g.trackTotal > 0)
 }
 
 /** Wertet einen beendeten Lauf. Gibt die neue Karte und zurück, ob es ein Bestwert war. */

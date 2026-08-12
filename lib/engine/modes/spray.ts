@@ -52,6 +52,10 @@ export const spray: ModeDef = {
   hold: true,
   ammoHud: true,
   extraLabel: 'Sprays',
+  // shots > 0 heisst nur „mindestens eine Kugel abgefeuert" — bei einem
+  // Magazin, das die Runde nie leert, bleibt score auf seinem Startwert 0
+  // stehen. Erst ein ausgewertetes Magazin ist eine echte Messung.
+  measured: (g) => g.data.sprays.length > 0,
   metricName: 'Ø %',
   start(g) {
     g.holes = []
