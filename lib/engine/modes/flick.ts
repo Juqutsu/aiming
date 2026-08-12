@@ -14,6 +14,9 @@ export const flick: ModeDef = {
   core: true,
   desc: 'Ein Ziel, das jedes Mal 12–34° neben deiner Blickrichtung erscheint. Erzwingt echte Flicks statt Mikro-Korrekturen.',
   hint: 'Ein Schuss pro Ziel · Fehlschuss kostet Punkte',
+  // Score ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Score',
   start(g) {
     g.targets = [mk(g)]

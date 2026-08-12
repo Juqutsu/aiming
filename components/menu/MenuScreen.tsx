@@ -1,16 +1,45 @@
 'use client'
 
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Sparkline } from '@/components/charts/Sparkline'
 import { CrosshairMark } from '@/components/settings/CrosshairPreview'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { useSettings } from '@/components/settings/SettingsProvider'
 import { MODE_LIST } from '@/lib/engine/modes'
 import { ROUTINES, type RoutineId } from '@/lib/engine/routines'
 import { cm360, edpi } from '@/lib/engine/sens'
-import type { ModeDef } from '@/lib/engine/types'
+import type { ModeDef, ModeId } from '@/lib/engine/types'
 import { routineHref } from '@/lib/routine/step'
+import type { Run } from '@/lib/store/runs'
+import { bestIndex, trend } from '@/lib/stats/trend'
+
+/** Sparkline-Daten je Modus: die letzten 20 vergleichbaren Läufe und der Index des besten. */
+type Spark = { values: number[]; best: number; /** Gesamtzahl vor dem Abschneiden bei 20. */ total: number }
+
+/**
+ * Einmal pro Änderung des Verlaufs statt einmal pro Render: `trend()` filtert
+ * und sortiert alle Läufe, elf Modi mal auf jedem Render eines Screens, der
+ * am ganzen Settings-Kontext hängt, wäre reine Verschwendung.
+ */
+function useSparklines(runs: Run[]): Record<ModeId, Spark> {
+  return useMemo(() => {
+    const out = {} as Record<ModeId, Spark>
+    for (const m of MODE_LIST) {
+      // Nur vergleichbare Läufe: auf 96 Pixeln sieht man einem Ausschlag
+      // nicht an, ob er Fortschritt war oder eine verstellte Zielgröße.
+      const vergleichbar = trend(runs, m.id).filter((p) => p.standard)
+      const angezeigt = vergleichbar.slice(-20)
+      out[m.id] = {
+        values: angezeigt.map((p) => p.metric),
+        best: bestIndex(angezeigt, !!m.lowerBetter),
+        total: vergleichbar.length,
+      }
+    }
+    return out
+  }, [runs])
+}
 
 const GROUPS: [ModeDef['cat'], string][] = [
   ['aim', 'Aim'],
@@ -24,8 +53,9 @@ function minuten(steps: readonly [string, number][]): number {
 }
 
 export default function MenuScreen() {
-  const { settings: s, crosshair, best, ready } = useSettings()
+  const { settings: s, crosshair, best, runs, ready } = useSettings()
   const [offen, setOffen] = useState(false)
+  const sparks = useSparklines(runs)
 
   return (
     <div className="screen">
@@ -42,6 +72,9 @@ export default function MenuScreen() {
               <br />
               eDPI <b>{Math.round(edpi(s.sens, s.dpi))}</b> · {cm360(s.sens, s.dpi).toFixed(1)} cm/360
             </button>
+            <Link className="gear" href="/verlauf" aria-label="Verlauf">
+              <TrendingUp size={17} strokeWidth={1.75} />
+            </Link>
             <button
               type="button"
               className="gear"
@@ -79,6 +112,10 @@ export default function MenuScreen() {
             <div className="grid">
               {MODE_LIST.filter((m) => m.cat === cat).map((m) => {
                 const b = best[m.id]
+                const spark = sparks[m.id]
+                // „Letzten“ stimmt nur, wenn die Sparkline tatsächlich bei 20
+                // Läufen abgeschnitten hat — sonst zeigt sie ohnehin alle.
+                const geschnitten = spark.total > spark.values.length
                 return (
                   <Link className="card" key={m.id} href={`/play/${m.id}`}>
                     {/* Nur wenn die Fertigkeit mehr sagt als die Gruppe darüber.
@@ -87,6 +124,13 @@ export default function MenuScreen() {
                     {m.skill !== title && <span className="skill">{m.skill}</span>}
                     <h3>{m.name}</h3>
                     <p>{m.desc}</p>
+                    <div className="spark">
+                      <Sparkline
+                        values={spark.values}
+                        best={spark.best}
+                        label={`${m.name}: Trend der ${geschnitten ? 'letzten ' : ''}${spark.values.length} vergleichbaren Läufe`}
+                      />
+                    </div>
                     <div className="best">
                       <span>{m.metricName}</span>
                       {/* Vor dem ersten Lesen aus dem Speicher steht ein Strich:

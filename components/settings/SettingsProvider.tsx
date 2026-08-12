@@ -7,15 +7,17 @@ import type { GameState, Settings } from '@/lib/engine/types'
 import { clearBest, loadBest, submitBest, type BestMap } from '@/lib/store/best'
 import { browserStore, sessionStore, type Store } from '@/lib/store/keys'
 import { loadCrosshair, loadSettings, saveCrosshair, saveSettings } from '@/lib/store/settings'
-import { loadSession, pushRun, type RunRow } from '@/lib/store/session'
+import { clearRuns, loadRuns, pushRun, sessionStart, type Run } from '@/lib/store/runs'
 
 /** Alles, was aus dem Speicher kommt — als ein Zustand, damit jede Änderung genau einen Render kostet. */
 type Gespeichert = {
   settings: Settings
   crosshair: CrosshairConfig
   best: BestMap
-  /** Die Läufe dieser Sitzung, ältester zuerst. */
-  history: RunRow[]
+  /** Alle gespeicherten Läufe, ältester zuerst. */
+  runs: Run[]
+  /** Die Läufe dieser Sitzung, ältester zuerst. Eine Teilmenge von `runs`. */
+  history: Run[]
   /** True, sobald aus dem Speicher gelesen wurde. Vorher gelten die Standardwerte. */
   ready: boolean
 }
@@ -24,6 +26,7 @@ export type SettingsApi = Gespeichert & {
   setSettings(patch: Partial<Settings>): void
   setCrosshair(patch: Partial<CrosshairConfig>): void
   resetBest(): void
+  resetRuns(): void
   /** Trägt einen beendeten Lauf ein. Gibt zurück, ob es ein Bestwert war. */
   submitRun(g: GameState): boolean
 }
@@ -32,6 +35,7 @@ const VORHER: Gespeichert = {
   settings: DEFAULT_SETTINGS,
   crosshair: DEFAULT_CROSSHAIR,
   best: {},
+  runs: [],
   history: [],
   ready: false,
 }
@@ -61,7 +65,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Rückrufe.
   const ref = useRef(state)
   const localRef = useRef<Store | null>(null)
-  const sessionRef = useRef<Store | null>(null)
+  // Der Beginn dieser Sitzung. Als Ref, weil er die Ansicht nie selbst ändert —
+  // er filtert nur, was aus `runs` in `history` fällt.
+  const startRef = useRef(0)
 
   const anwenden = useCallback((patch: Partial<Gespeichert>) => {
     const next = { ...ref.current, ...patch }
@@ -77,12 +83,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const local = browserStore() ?? memoryStore()
     const session = sessionStore() ?? memoryStore()
     localRef.current = local
-    sessionRef.current = session
+    const start = sessionStart(session, Date.now())
+    startRef.current = start
+    const runs = loadRuns(local)
     anwenden({
       settings: loadSettings(local),
       crosshair: loadCrosshair(local),
       best: loadBest(local),
-      history: loadSession(session),
+      runs,
+      history: runs.filter((r) => r.t >= start),
       ready: true,
     })
   }, [anwenden])
@@ -107,21 +116,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (localRef.current) clearBest(localRef.current)
   }, [anwenden])
 
+  // Zwei Knöpfe statt eines gemeinsamen: Bestwerte und Verlauf sind für den
+  // Spielenden nicht dasselbe.
+  const resetRuns = useCallback(() => {
+    anwenden({ runs: [], history: [] })
+    if (localRef.current) clearRuns(localRef.current)
+  }, [anwenden])
+
   const submitRun = useCallback((g: GameState) => {
     const local = localRef.current
-    const session = sessionRef.current
-    const history = session ? pushRun(session, g) : ref.current.history
-    if (!local) {
-      anwenden({ history })
-      return false
-    }
+    if (!local) return false
+    const runs = pushRun(local, g, Date.now())
     const { best, isBest } = submitBest(local, g, ref.current.best)
-    anwenden({ best, history })
+    anwenden({ best, runs, history: runs.filter((r) => r.t >= startRef.current) })
     return isBest
   }, [anwenden])
 
   return (
-    <Ctx.Provider value={{ ...state, setSettings, setCrosshair, resetBest, submitRun }}>
+    <Ctx.Provider value={{ ...state, setSettings, setCrosshair, resetBest, resetRuns, submitRun }}>
       {children}
     </Ctx.Provider>
   )

@@ -2,6 +2,8 @@
 
 import { useSettings } from '@/components/settings/SettingsProvider'
 import { coachLine } from '@/lib/engine/coach'
+import { pc } from '@/lib/engine/format'
+import { MODES } from '@/lib/engine/modes'
 import type { GameState } from '@/lib/engine/types'
 import type { RoutineStep } from '@/lib/routine/step'
 
@@ -85,17 +87,19 @@ export function Results({
                   <th>Modus</th>
                   <th className="n">Score</th>
                   <th className="n">Acc</th>
-                  <th className="n">Detail</th>
+                  <th className="n">Metrik</th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((r, i) => (
-                  <tr key={i}>
+                {/* Dieselben zwanzig Zeilen wie bisher: die Tabelle soll den
+                    Ergebnis-Schirm nicht in die Länge ziehen. */}
+                {history.slice(-20).map((r, i) => (
+                  <tr key={r.t}>
                     <td>{i + 1}</td>
-                    <td>{r.mode}</td>
+                    <td>{MODES[r.mode].name}</td>
                     <td className="n">{r.score}</td>
-                    <td className="n">{r.acc}</td>
-                    <td className="n">{r.detail}</td>
+                    <td className="n">{pc(r.hits, r.shots)}</td>
+                    <td className="n">{Math.round(r.metric)}</td>
                   </tr>
                 ))}
               </tbody>

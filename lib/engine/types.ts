@@ -124,6 +124,18 @@ export type ModeDef = {
   extraLabel?: string
   /** Bei true ist ein kleinerer Metrikwert besser. */
   lowerBetter?: boolean
+  /**
+   * Überschreibt die Standardfrage „hat dieser Lauf etwas gemessen?" für
+   * Modi, deren Metrik mehr braucht als einen abgefeuerten Schuss — etwa
+   * Reaktion, deren Sentinel-Wert sonst als Bestwert durchrutscht.
+   */
+  measured?(g: GameState): boolean
+  /**
+   * Die Metrik summiert sich über die Runde auf, statt eine Rate zu sein.
+   * Eine andere Rundenlänge macht zwei Läufe dann unvergleichbar — anders
+   * als bei einer Rate, die von der Rundenlänge unberührt bleibt.
+   */
+  cumulative?: boolean
   metricName: string
   start(g: GameState): void
   tick(g: GameState, input: Input, dt: number): void

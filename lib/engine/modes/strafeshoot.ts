@@ -18,6 +18,9 @@ export const strafeshoot: ModeDef = {
   desc: 'Dauerlauf zwischen zwei Marken, Ziele erscheinen laufend. Du musst permanent zwischen Bewegung und sauberem Stopp umschalten.',
   hint: 'A / D dauerhaft wechseln · nur im Stand schießen',
   extraLabel: 'Stand-Quote',
+  // Kills ist eine Summe ueber die Runde — eine laengere Runde gibt mehr Zeit
+  // zum Sammeln und macht zwei Laeufe unvergleichbar.
+  cumulative: true,
   metricName: 'Kills',
   start(g) {
     g.targets = [mk(g)]

@@ -19,7 +19,8 @@
 - **Vergleichbar** heißt: `dur` und `size` gleich den Werten aus `DEFAULT_SETTINGS` (`dur: 60`, `sizeMul: 1.0`). Die Waffe zählt nicht hinein.
 - **`lowerBetter` dreht das Vorzeichen genau zweimal:** in `profile()` (für `delta`), in `byDay()` (für `best`) — und in `bestIndex()` für die Punktfarbe. Nie in einer Komponente.
 - **Farbregel:** Datenlinie `var(--text)`, Punkte `var(--dim)`, nur der beste Punkt `var(--sig)`, Achsen und Raster `var(--line)`. Orange trägt Ziele und primäre Aktion — eine Datenlinie ist keins von beidem.
-- **Marken-Spezifikation (dataviz):** Linien 2 px mit runden Enden, Punkte r ≥ 4 mit 2 px Ring in Flächenfarbe, Rasterlinien 1 px durchgezogen (nie gestrichelt), keine Zahl an jedem Punkt, eine Achse.
+- **Marken-Spezifikation (dataviz):** Linien 2 px mit runden Enden, Punkte r ≥ 4 mit 2 px Ring in Flächenfarbe, Rasterlinien 1 px durchgezogen (nie gestrichelt), keine Zahl an jedem Punkt, eine Achse. **Die Sparkline ist davon ausgenommen:** auf 96×24 Pixeln trägt sie eine 1,5-px-Linie und einen Punkt mit r=2,5 samt 1,5-px-Ring — ein 12 px breiter Punkt füllte die halbe Kachel und verdeckte die Kurve, die er markieren soll.
+- **Barrierefreiheit:** jedes Chart trägt eine textliche Entsprechung. Beim `LineChart` ist das ein visuell verstecktes Element (`.vh`) mit Zusammenfassung und allen Punkten; die Sparkline trägt stattdessen `role="img"` mit `aria-label` — für ein 96 Pixel breites Zeichen ohne Achsen die passendere Form als eine versteckte Liste aus zwanzig Zahlen auf jeder der elf Modus-Karten.
 - **Kein Migrationsschritt** für `range.session.v1`: der alte Schlüssel bleibt liegen und verfällt mit der Sitzung.
 - **Commit-Nachrichten** deutsch ohne Umlaute, wie die bestehende Historie (`feat: ...`, `refactor: ...`).
 
@@ -1305,7 +1306,8 @@ export function BarRow({ label, fill, value, hint }: {
   hint: string
 }) {
   return (
-    <div className="bar">
+    // `.profbar`, nicht `.bar`: `.bar` gehört bereits den HUD-Balken (app/range.css:140).
+    <div className="profbar">
       <span>
         {label}
         <span className="vh"> — {hint}</span>
@@ -1351,17 +1353,18 @@ Direkt vor dem Block `/* ---------- Spielwurzel ---------- */` einfügen:
 .tip b{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:600}
 
 .bars{display:grid;gap:10px}
-.bar{display:grid;grid-template-columns:140px 1fr 64px;align-items:center;gap:12px;
+/* `.profbar`, nicht `.bar`: den Namen tragen schon die HUD-Balken weiter oben. */
+.profbar{display:grid;grid-template-columns:140px 1fr 64px;align-items:center;gap:12px;
   font-size:13px}
-.bar .track{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-.bar .fill{display:block;height:100%;border-radius:4px;background:var(--text)}
-.bar .val{text-align:right;color:var(--dim);
+.profbar .track{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.profbar .fill{display:block;height:100%;border-radius:4px;background:var(--text)}
+.profbar .val{text-align:right;color:var(--dim);
   font-family:var(--font-num);font-variant-numeric:tabular-nums}
 
 .empty{color:var(--dim);font-size:13px;line-height:1.6}
 
 @media (max-width:640px){
-  .bar{grid-template-columns:100px 1fr 56px;gap:8px}
+  .profbar{grid-template-columns:100px 1fr 56px;gap:8px}
 }
 ```
 
